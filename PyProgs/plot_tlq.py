@@ -1,6 +1,7 @@
 import os
 import numpy as np
-# import matplotlib.pyplot as plt
+import time
+
 from visualization import setup_test_grid
 
 from chaco.api import *
@@ -13,15 +14,13 @@ from traitsui.api import *
 from enable.api import Component, ComponentEditor
 
 
-from tvtk.pyface.scene_model import SceneModel
 from tvtk.pyface.scene_editor import SceneEditor
-from mayavi.core.ui.mayavi_scene import MayaviScene
+#~ from mayavi.core.ui.mayavi_scene import MayaviScene
 from mayavi.core.ui.engine_view import EngineView
 from mayavi.tools.mlab_scene_model import MlabSceneModel
 from enthought.mayavi.sources.array_source import ArraySource
+from mayavi.modules.api import Outline, Surface, ContourGridPlane, IsoSurface
 
-class Viewer(HasTraits):
-    pass
 
 class Grid4D(HasTraits):
     grid4D = Instance(np.ndarray)
@@ -30,8 +29,8 @@ class Grid4D(HasTraits):
     
     # probs = Enum
     
-    low = Int(0)
-    max = Int(1)
+    low = CInt(0)
+    max = CInt(1)
     current = Range('low','max')
     
     pd = ArrayPlotData()
@@ -53,6 +52,8 @@ class Grid4D(HasTraits):
     scene = Instance(MlabSceneModel, ())
     plot3D = Any
     source3D = Instance(ArraySource)
+    
+    animate = Button
    
     def __init__(self):
         self.grid4D,self.grid_dict, x_list = setup_test_grid()
@@ -88,23 +89,51 @@ class Grid4D(HasTraits):
                                             ybounds=(self.x3[0], self.x3[-1]))
         
         
-        self.engine_view = EngineView(engine=self.scene.engine)
-        from mayavi.sources.api import ParametricSurface
-        from mayavi.modules.api import Outline, Surface
+        self.engine = EngineView(engine=self.scene.engine)
+        
         e = self.scene.engine
 
         self.source3D = ArraySource(transpose_input_array=True)
         self.source3D.scalar_data = self.grid4D[:,:,:,0]
-        self.source3D.spacing=(1,1,1)
+        dx = self.x0[1] - self.x0[0]
+        dy = self.x1[1] - self.x1[0]
+        dz = self.x2[1] - self.x2[0]
+        self.source3D.spacing=(dx,dy,-dz)
         self.source3D.origin=(0,0,0)
         e.add_source(self.source3D)
-        e.add_module(Surface())
-
-        # Visualize the data.
+        
+        
+        cgp = ContourGridPlane()
+        cgp.grid_plane.axis = 'x'
+        cgp.grid_plane.position = np.mean(self.x0)
+        #~ cgp.enable_contours = False
+        cgp.contour.filled_contours = True
+        e.add_module(cgp)
+        
+        cgp = ContourGridPlane()
+        cgp.grid_plane.axis = 'y'
+        cgp.grid_plane.position = np.mean(self.x1)
+        #~ cgp.enable_contours = False
+        cgp.contour.filled_contours = True
+        e.add_module(cgp)
+        
+        cgp = ContourGridPlane()
+        cgp.grid_plane.axis = 'z'
+        cgp.grid_plane.position = np.mean(self.x2)
+        #~ cgp.enable_contours = False
+        cgp.contour.filled_contours = True
+        e.add_module(cgp)
+        
+        
+        i = IsoSurface()
+        i.contour.auto_contours = True
+        i.contour.number_of_contours = 4
+        #~ e.add_module(i)
+        
+        
         o = Outline()
         e.add_module(o)
         
-        # self.plot3D = self.scene.mlab.plot3d(self.x0, self.x0, self.x0, np.random.random(len(self.x0)), colormap='Spectral')
         
     
     def _grid4D_changed(self):
@@ -124,6 +153,7 @@ class Grid4D(HasTraits):
         self.pd.set_data('p_x0_x3i',np.ones(len(self.x0))*self.x3[new])
         self.p_x0_x3.plot(('x0','p_x0_x3i'))
         
+        
         self.pd.set_data('p_x1_x3i',np.ones(len(self.x1))*self.x3[new])
         self.p_x1_x3.plot(('x1','p_x1_x3i'))
         
@@ -135,8 +165,14 @@ class Grid4D(HasTraits):
         
         self.source3D.scalar_data = self.grid4D[:,:,:,new]
         
-
+    
+    def _animate_fired(self):
+        while self.current < self.max:
+            self.current += 1
+            time.sleep(1)
+    
     view = View("current",
+        #~ "animate",
         Tabbed(
             Group(
                 HGroup(
@@ -158,18 +194,17 @@ class Grid4D(HasTraits):
                 label='2D',padding=0),
             
                 Group(
-                    Label('Let\'s plot the Mayavi Scene !'),
+                    HSplit(
+                    Item('engine',style='custom',show_label=False),
                     Item('scene', height=400, show_label=False,
-                        editor=SceneEditor(scene_class=MayaviScene)),
+                        editor=SceneEditor()),
+                    
+                    ),
                     label='3D'
                     ),
                 ),
             resizable=True)
     
-   
-
-
-
 
 if __name__ == '__main__':
   g = Grid4D()
