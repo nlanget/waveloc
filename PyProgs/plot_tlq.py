@@ -1,17 +1,26 @@
 import os
 import numpy as np
-# import matplotlib.pyplot as plt
+import time
+
 from visualization import setup_test_grid
-    
-from traits.api import *
-from traitsui.api import *
 
 from chaco.api import *
 
+
+from traits.api import *
+from traitsui.api import *
+
+
 from enable.api import Component, ComponentEditor
 
-class Viewer(HasTraits):
-    pass
+
+from tvtk.pyface.scene_editor import SceneEditor
+#~ from mayavi.core.ui.mayavi_scene import MayaviScene
+from mayavi.core.ui.engine_view import EngineView
+from mayavi.tools.mlab_scene_model import MlabSceneModel
+from enthought.mayavi.sources.array_source import ArraySource
+from mayavi.modules.api import Outline, Surface, ContourGridPlane, IsoSurface
+
 
 class Grid4D(HasTraits):
     grid4D = Instance(np.ndarray)
@@ -20,8 +29,8 @@ class Grid4D(HasTraits):
     
     # probs = Enum
     
-    low = Int(0)
-    max = Int(1)
+    low = CInt(0)
+    max = CInt(1)
     current = Range('low','max')
     
     pd = ArrayPlotData()
@@ -39,6 +48,13 @@ class Grid4D(HasTraits):
     p_x1_x3 = Plot(pd)
     p_x2_x3 = Plot(pd)
     
+    engine = Instance(EngineView)
+    scene = Instance(MlabSceneModel, ())
+    plot3D = Any
+    source3D = Instance(ArraySource)
+    
+    animate = Button
+   
     def __init__(self):
         self.grid4D,self.grid_dict, x_list = setup_test_grid()
         self.x0,self.x1,self.x2,self.x3 = x_list
@@ -71,10 +87,58 @@ class Grid4D(HasTraits):
         self.p_x2_x3.contour_plot('p_x2_x3',type="poly",
                                             xbounds=(self.x2[0], self.x2[-1]),
                                             ybounds=(self.x3[0], self.x3[-1]))
+        
+        
+        self.engine = EngineView(engine=self.scene.engine)
+        
+        e = self.scene.engine
+
+        self.source3D = ArraySource(transpose_input_array=True)
+        self.source3D.scalar_data = self.grid4D[:,:,:,0]
+        dx = self.x0[1] - self.x0[0]
+        dy = self.x1[1] - self.x1[0]
+        dz = self.x2[1] - self.x2[0]
+        self.source3D.spacing=(dx,dy,-dz)
+        self.source3D.origin=(0,0,0)
+        e.add_source(self.source3D)
+        
+        
+        cgp = ContourGridPlane()
+        cgp.grid_plane.axis = 'x'
+        cgp.grid_plane.position = np.mean(self.x0)
+        #~ cgp.enable_contours = False
+        cgp.contour.filled_contours = True
+        e.add_module(cgp)
+        
+        cgp = ContourGridPlane()
+        cgp.grid_plane.axis = 'y'
+        cgp.grid_plane.position = np.mean(self.x1)
+        #~ cgp.enable_contours = False
+        cgp.contour.filled_contours = True
+        e.add_module(cgp)
+        
+        cgp = ContourGridPlane()
+        cgp.grid_plane.axis = 'z'
+        cgp.grid_plane.position = np.mean(self.x2)
+        #~ cgp.enable_contours = False
+        cgp.contour.filled_contours = True
+        e.add_module(cgp)
+        
+        
+        i = IsoSurface()
+        i.contour.auto_contours = True
+        i.contour.number_of_contours = 4
+        #~ e.add_module(i)
+        
+        
+        o = Outline()
+        e.add_module(o)
+        
+        
     
     def _grid4D_changed(self):
         self.dims = list(self.grid4D.shape)
-        self.max = self.dims[-1]
+        self.max = self.dims[-1]-1
     
     def _load(self):
         for var in ['x0','x1','x2','x3','x0_x1','x0_x2','x0_x3','x1_x2','x1_x3','x2_x3']:
@@ -89,6 +153,7 @@ class Grid4D(HasTraits):
         self.pd.set_data('p_x0_x3i',np.ones(len(self.x0))*self.x3[new])
         self.p_x0_x3.plot(('x0','p_x0_x3i'))
         
+        
         self.pd.set_data('p_x1_x3i',np.ones(len(self.x1))*self.x3[new])
         self.p_x1_x3.plot(('x1','p_x1_x3i'))
         
@@ -98,32 +163,48 @@ class Grid4D(HasTraits):
         self.pd.set_data('p_x3i',np.ones(len(self.x2))*self.x3[new])
         self.p_x3.plot(('p_x3i', 'p_x3'))
         
-
-    view = View("current",
-            HGroup(
-                Item("p_x0",editor=ComponentEditor()),
-                Item("p_x1",editor=ComponentEditor()),
-                Item("p_x2",editor=ComponentEditor()),
-                Item("p_x3",editor=ComponentEditor()),
-                ),    
-            HGroup(
-                Item("p_x0_x1",editor=ComponentEditor()),
-                Item("p_x0_x2",editor=ComponentEditor()),
-                Item("p_x0_x3",editor=ComponentEditor()),
-                ),
-            HGroup(
-                Item("p_x1_x2",editor=ComponentEditor()),
-                Item("p_x1_x3",editor=ComponentEditor()),
-                Item("p_x2_x3",editor=ComponentEditor()),
-                ),
-                
-            resizable=True
-                )
+        self.source3D.scalar_data = self.grid4D[:,:,:,new]
+        
     
-   
-
-
-
+    def _animate_fired(self):
+        while self.current < self.max:
+            self.current += 1
+            time.sleep(1)
+    
+    view = View("current",
+        #~ "animate",
+        Tabbed(
+            Group(
+                HGroup(
+                    Item("p_x0",editor=ComponentEditor()),
+                    Item("p_x1",editor=ComponentEditor()),
+                    Item("p_x2",editor=ComponentEditor()),
+                    Item("p_x3",editor=ComponentEditor()),
+                    ),    
+                HGroup(
+                    Item("p_x0_x1",editor=ComponentEditor()),
+                    Item("p_x0_x2",editor=ComponentEditor()),
+                    Item("p_x0_x3",editor=ComponentEditor()),
+                    ),
+                HGroup(
+                    Item("p_x1_x2",editor=ComponentEditor()),
+                    Item("p_x1_x3",editor=ComponentEditor()),
+                    Item("p_x2_x3",editor=ComponentEditor()),
+                    ),
+                label='2D',padding=0),
+            
+                Group(
+                    HSplit(
+                    Item('engine',style='custom',show_label=False),
+                    Item('scene', height=400, show_label=False,
+                        editor=SceneEditor()),
+                    
+                    ),
+                    label='3D'
+                    ),
+                ),
+            resizable=True)
+    
 
 if __name__ == '__main__':
   g = Grid4D()

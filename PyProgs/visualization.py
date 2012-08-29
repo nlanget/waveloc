@@ -5,7 +5,8 @@ from integrate4D import *
 def setup_test_grid():
 
   dims=(20,30,40,50)
-  grid4D=np.zeros(dims)
+  #~ grid4D=np.zeros(dims)
+  grid4D=np.random.random(dims)
   x0=np.linspace(0,4,dims[0])
   x1=np.linspace(0,6,dims[1])
   x2=np.linspace(0,8,dims[2])
