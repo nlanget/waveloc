@@ -2,13 +2,23 @@ import os
 import numpy as np
 # import matplotlib.pyplot as plt
 from visualization import setup_test_grid
-    
-from traits.api import *
-from traitsui.api import *
 
 from chaco.api import *
 
+
+from traits.api import *
+from traitsui.api import *
+
+
 from enable.api import Component, ComponentEditor
+
+
+from tvtk.pyface.scene_model import SceneModel
+from tvtk.pyface.scene_editor import SceneEditor
+from mayavi.core.ui.mayavi_scene import MayaviScene
+from mayavi.core.ui.engine_view import EngineView
+from mayavi.tools.mlab_scene_model import MlabSceneModel
+from enthought.mayavi.sources.array_source import ArraySource
 
 class Viewer(HasTraits):
     pass
@@ -39,6 +49,11 @@ class Grid4D(HasTraits):
     p_x1_x3 = Plot(pd)
     p_x2_x3 = Plot(pd)
     
+    engine = Instance(EngineView)
+    scene = Instance(MlabSceneModel, ())
+    plot3D = Any
+    source3D = Instance(ArraySource)
+   
     def __init__(self):
         self.grid4D,self.grid_dict, x_list = setup_test_grid()
         self.x0,self.x1,self.x2,self.x3 = x_list
@@ -71,10 +86,30 @@ class Grid4D(HasTraits):
         self.p_x2_x3.contour_plot('p_x2_x3',type="poly",
                                             xbounds=(self.x2[0], self.x2[-1]),
                                             ybounds=(self.x3[0], self.x3[-1]))
+        
+        
+        self.engine_view = EngineView(engine=self.scene.engine)
+        from mayavi.sources.api import ParametricSurface
+        from mayavi.modules.api import Outline, Surface
+        e = self.scene.engine
+
+        self.source3D = ArraySource(transpose_input_array=True)
+        self.source3D.scalar_data = self.grid4D[:,:,:,0]
+        self.source3D.spacing=(1,1,1)
+        self.source3D.origin=(0,0,0)
+        e.add_source(self.source3D)
+        e.add_module(Surface())
+
+        # Visualize the data.
+        o = Outline()
+        e.add_module(o)
+        
+        # self.plot3D = self.scene.mlab.plot3d(self.x0, self.x0, self.x0, np.random.random(len(self.x0)), colormap='Spectral')
+        
     
     def _grid4D_changed(self):
         self.dims = list(self.grid4D.shape)
-        self.max = self.dims[-1]
+        self.max = self.dims[-1]-1
     
     def _load(self):
         for var in ['x0','x1','x2','x3','x0_x1','x0_x2','x0_x3','x1_x2','x1_x3','x2_x3']:
@@ -98,26 +133,38 @@ class Grid4D(HasTraits):
         self.pd.set_data('p_x3i',np.ones(len(self.x2))*self.x3[new])
         self.p_x3.plot(('p_x3i', 'p_x3'))
         
+        self.source3D.scalar_data = self.grid4D[:,:,:,new]
+        
 
     view = View("current",
-            HGroup(
-                Item("p_x0",editor=ComponentEditor()),
-                Item("p_x1",editor=ComponentEditor()),
-                Item("p_x2",editor=ComponentEditor()),
-                Item("p_x3",editor=ComponentEditor()),
-                ),    
-            HGroup(
-                Item("p_x0_x1",editor=ComponentEditor()),
-                Item("p_x0_x2",editor=ComponentEditor()),
-                Item("p_x0_x3",editor=ComponentEditor()),
+        Tabbed(
+            Group(
+                HGroup(
+                    Item("p_x0",editor=ComponentEditor()),
+                    Item("p_x1",editor=ComponentEditor()),
+                    Item("p_x2",editor=ComponentEditor()),
+                    Item("p_x3",editor=ComponentEditor()),
+                    ),    
+                HGroup(
+                    Item("p_x0_x1",editor=ComponentEditor()),
+                    Item("p_x0_x2",editor=ComponentEditor()),
+                    Item("p_x0_x3",editor=ComponentEditor()),
+                    ),
+                HGroup(
+                    Item("p_x1_x2",editor=ComponentEditor()),
+                    Item("p_x1_x3",editor=ComponentEditor()),
+                    Item("p_x2_x3",editor=ComponentEditor()),
+                    ),
+                label='2D',padding=0),
+            
+                Group(
+                    Label('Let\'s plot the Mayavi Scene !'),
+                    Item('scene', height=400, show_label=False,
+                        editor=SceneEditor(scene_class=MayaviScene)),
+                    label='3D'
+                    ),
                 ),
-            HGroup(
-                Item("p_x1_x2",editor=ComponentEditor()),
-                Item("p_x1_x3",editor=ComponentEditor()),
-                Item("p_x2_x3",editor=ComponentEditor()),
-                ),
-                
-                )
+            resizable=True)
     
    
 
