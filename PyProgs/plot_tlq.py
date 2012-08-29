@@ -117,6 +117,7 @@ class Grid4D(HasTraits):
                 Item("p_x2_x3",editor=ComponentEditor()),
                 ),
                 
+            resizable=True
                 )
     
    
