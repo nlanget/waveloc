@@ -47,7 +47,7 @@ class WavelocOptions(object):
     self.p.add_argument('--stations',action='store',default='channels_HHZ.dat',help='station list (found in $WAVELOC_PATH/lib)')
     self.p.add_argument('--search_grid',action='store',help="search grid e.g. grid.500m.search.hdr (found in $WAVELOC_PATH/lib)")
     self.p.add_argument('--time_grid',  action='store',help="time grid basename e.g. belgium.P (found in $WAVELOC_PATH/lib)")
-    self.p.add_argument('--load_ttimes_buf',action='store_true',default=False,help='load pre-calculated travel-times for the search grid from file')
+    self.p.add_argument('--load_ttimes_buf',action='store_true',default=True,help='load pre-calculated travel-times for the search grid from file')
 
     self.p.add_argument('--reloc', action='store_true', default=False, help='apply to relocated events')
     self.p.add_argument('--loclevel', action='store', default=50,   type=float,help='trigger stack level for locations (e.g. 50) ')
@@ -176,8 +176,8 @@ class WavelocOptions(object):
     if self.opdict['outdir']==None:  raise UserWarning('Empty output directory name') 
     outdir=os.path.join(base_path,'out',self.opdict['outdir'])
     if not os.path.exists(outdir):  
-      op.makedirs(outdir)
-      op.makedirs(os.path.join(outdir,'stack'))
+      os.makedirs(outdir)
+      os.makedirs(os.path.join(outdir,'stack'))
 
     if self.opdict['gradglob']==None:  raise UserWarning('Empty gradglob') 
     grad_names=glob.glob(os.path.join(datadir,self.opdict['gradglob']))
@@ -218,18 +218,21 @@ class WavelocOptions(object):
     grad_names=glob.glob(os.path.join(datadir,self.opdict['gradglob']))
     if len(grad_names)==0: raise UserWarning('No kurtosis gradient files found : %s',grad_names)
 
+    out_path=os.path.join(base_path,'out',self.opdict['outdir'])
+    if not os.path.isdir(out_path): raise UserWarning('Output directory %s does not exist.') 
+
     if self.opdict['outdir']==None:  raise UserWarning('Empty output directory name') 
     stackdir=os.path.join(base_path,'out',self.opdict['outdir'],'stack')
     if not os.path.isdir(stackdir): raise UserWarning('Stack directory %s does not exist.  Have you run migration correctly ?') 
 
     locdir=os.path.join(base_path,'out',self.opdict['outdir'],'loc')
-    if not os.path.exists(locdir): op.makedirs(locdir)  
+    if not os.path.exists(locdir): os.makedirs(locdir)  
 
     relocdir=os.path.join(base_path,'out',self.opdict['outdir'],'reloc')
-    if self.opdict['reloc'] and not os.path.exists(relocdir): op.makedirs(relocdir)  
+    if self.opdict['reloc'] and not os.path.exists(relocdir): os.makedirs(relocdir)  
 
     griddir=os.path.join(base_path,'out',self.opdict['outdir'],'grid')
-    if not os.path.exists(griddir): op.makedirs(griddir)  
+    if not os.path.exists(griddir): os.makedirs(griddir)  
 
     figdir=os.path.join(base_path,'out',self.opdict['outdir'],'fig')
     if not os.path.exists(figdir): os.makedirs(figdir)  
