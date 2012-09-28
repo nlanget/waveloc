@@ -3,6 +3,7 @@
 /out/
 /test_figures/
 *.buf
+!/test_data/*.buf
 *.ttimes
 /lib/*.hdr
 !/lib/*search.hdr
@@ -15,4 +16,14 @@
 *.swo
 *.tgz
 *.prof
+/nll/
 .DS_store
+/test_data/*.tgz
+/test_data/time_grids/
+/lib/*test*
+*ijen*
+*hdf5
+MANIFEST
+/build/
+__init__.py
+/dist/

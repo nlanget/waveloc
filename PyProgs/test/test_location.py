@@ -1,9 +1,10 @@
 import os, glob, unittest
-from options import WavelocOptions
-from OP_waveforms import Waveform
-from locations_trigger import do_locations_trigger_setup_and_run
-from locations_prob import do_locations_prob_setup_and_run
-from integrate4D import *
+import numpy as np
+from waveloc.options import WavelocOptions
+from waveloc.OP_waveforms import Waveform
+from waveloc.locations_trigger import do_locations_trigger_setup_and_run, trigger_locations_inner
+from waveloc.NllGridLib import *
+from waveloc.integrate4D import *
 
 def suite():
   suite = unittest.TestSuite()
@@ -11,10 +12,71 @@ def suite():
   suite.addTest(IntegrationTests('test_expected_values'))
   suite.addTest(LocationTests('test_locations_trigger'))
   suite.addTest(LocationTests('test_locations_trigger_fullRes'))
-  suite.addTest(LocationTests('test_locations_prob'))
-  suite.addTest(LocationTests('test_locations_prob_fullRes'))
+#  suite.addTest(LocationTests('test_locations_prob'))
+#  suite.addTest(LocationTests('test_locations_prob_fullRes'))
+  suite.addTest(TriggeringTests('test_simple_trigger'))
+  suite.addTest(TriggeringTests('test_smoothing'))
+  suite.addTest(TriggeringTests('test_gaussian_trigger'))
   return suite
 
+class TriggeringTests(unittest.TestCase):
+
+  def test_simple_trigger(self):
+
+    max_val=np.random.rand(100)
+    max_x=np.random.rand(100)
+    max_y=np.random.rand(100)
+    max_z=np.random.rand(100)
+
+    max_val[10]=5
+    max_val[20]=7
+    max_val[45]=2
+    max_val[80]=10
+
+    left_trig=right_trig=3
+    locs=trigger_locations_inner(max_val,max_x,max_y,max_z,left_trig,right_trig,0.0,1.0)
+    self.assertEqual(len(locs),3)
+    self.assertAlmostEqual(locs[0]['max_trig'],5)
+    self.assertAlmostEqual(locs[1]['max_trig'],7)
+    self.assertAlmostEqual(locs[2]['max_trig'],10)
+    self.assertAlmostEqual(locs[0]['o_time'],10)
+    self.assertAlmostEqual(locs[1]['o_time'],20)
+    self.assertAlmostEqual(locs[2]['o_time'],80)
+
+  #@unittest.expectedFailure
+  def test_smoothing(self):
+
+    from waveloc.filters import smooth
+
+    x=np.arange(100)
+    max_val=10.*np.exp(-(x-50.)*(x-50.)/(10.*10.))+np.random.rand(100)
+    max_x=np.random.rand(100)
+    max_y=np.random.rand(100)
+    max_z=np.random.rand(100)
+
+    max_val_smooth=smooth(max_val)
+
+    left_trig=right_trig=3
+    locs_smooth=trigger_locations_inner(max_val_smooth,max_x,max_y,max_z,left_trig,right_trig,0.0,1.0)
+    self.assertAlmostEqual(locs_smooth[0]['o_time'],50.,2)
+
+
+
+  def test_gaussian_trigger(self):
+
+    x=np.arange(100)
+    max_val=10.*np.exp(-(x-50.)*(x-50.)/(10.*10.))
+    max_x=np.random.rand(100)
+    max_y=np.random.rand(100)
+    max_z=np.random.rand(100)
+
+    left_trig=right_trig=3
+    locs=trigger_locations_inner(max_val,max_x,max_y,max_z,left_trig,right_trig,0.0,1.0)
+    self.assertAlmostEqual(locs[0]['max_trig'],10)
+    self.assertAlmostEqual(locs[0]['o_time'],50)
+    
+
+#@unittest.skip('Skipping integration tests')
 class IntegrationTests(unittest.TestCase):
 
   def test_integration(self):
@@ -63,6 +125,7 @@ class IntegrationTests(unittest.TestCase):
     self.assertAlmostEqual(var_x2,0.0210,4)
     self.assertAlmostEqual(var_x3,0.0,7)
 
+#@unittest.skip('Skipping location tests')
 class LocationTests(unittest.TestCase):
 
   def setUp(self):
