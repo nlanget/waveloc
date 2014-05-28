@@ -75,8 +75,10 @@ class SyntheticMigrationTests(unittest.TestCase):
       #err_grid_z = f_unc.create_dataset('err_grid_z',(nbuf,))
 
     if plot:
+      # uncertainty equal to 0
       #list_ibb = [382,404,1316,1767,2207,2658,3098,4890,5307,5803,5867,5868,5924,6376,7225,7276,7288,7673,7674,7675,7684,7685,7696,7728,7729,7739,7740,7741,7751,8123,8124,8125,8126,8127,8134,8145,8146,8147,8149,8157,8168,8212,8573,8574,8575,8576,8577,8578,8585,8587,8608,8618,8619,9024,9025,9026,9027,9028,9029,9030,9037,9047,9048,9476,9477,9480,9481,9488,9489,9490,9491,9498,9499,9521,9532,9544,9554,9928,9929,9930,9931,9932,9934,9938,9940,9941,9952,9972,9973,9983,10005,10379,10380,10381,10382,10383,10385,10386,10403,10411,10412,10423,10424,10829,10830,10831,10832,10837,10851,10852,10862,10875,10885,11282,11283,11297,11304,11557,11732,11733,11734,11743,11755,11776,11777,11997,12183,12184,12195,12205,12635,12765,12904,18172]
 
+      # maximum uncertainty values
       list_ibb = [1794 ,9716,11681,12234,10178,12683,16462,13167,11738,16809,18240,12091,10306,18304,13258,15845,16381,9933,9727,16830,13123,16340,9264,12004,15070,15346,11609,12544,11793,17327,17732,13553,18260,12858,18250,17359,10168,9717,12190,9255,10619,16436,15556,10835,17326,12287,14643,16477,10640,10639,17336,15961,11091,12255,16866,18305,12531,12543,13652,17788,12688,17270,15895,16775,12247,12475,17778,6182,10179,16380,18249,15951,15564,18239,10630,12188,15488,11726,12476,11147]
 
     for ixx in range(0,nbx):
@@ -154,9 +156,15 @@ class SyntheticMigrationTests(unittest.TestCase):
           test_info['x_err'] = (locs[0]['x_mean']-locs[0]['x_sigma'],locs[0]['x_mean']+locs[0]['x_sigma'])
           test_info['y_err'] = (locs[0]['y_mean']-locs[0]['y_sigma'],locs[0]['y_mean']+locs[0]['y_sigma'])
           test_info['z_err'] = (locs[0]['z_mean']-locs[0]['z_sigma'],locs[0]['z_mean']+locs[0]['z_sigma'])
-          test_info['t_err'] = (locs[0]['o_time']-locs[0]['o_err_left']-stack_start_time,locs[0]['o_time']+locs[0]['o_err_right']-stack_start_time)
+          test_info['t_err'] = (locs[0]['o_time']-locs[0]['o_err_left'],locs[0]['o_time']+locs[0]['o_err_right'])
+          #test_info['t_err'] = (locs[0]['o_time']-locs[0]['o_err_left']-stack_start_time,locs[0]['o_time']+locs[0]['o_err_right']-stack_start_time)
 
           if plot:
+
+            # The first figure shows the stacking values for the true origin time.
+            # The second figure shows the stacking values for the recovered origin time.
+            # The third plot shows the kurtosis traces alignment.
+            # yellow star = true location ; red star = Waveloc's location
 
             it_found = wo.opdict['syn_samplefreq'] * test_info['o_time']
             ix_found = int(round((x_found-x_orig)*1./dx))
