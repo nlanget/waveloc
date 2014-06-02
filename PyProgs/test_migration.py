@@ -12,8 +12,8 @@ from test_processing import waveforms_to_signature
 def suite():
   suite = unittest.TestSuite()
   suite.addTest(SyntheticMigrationTests('test_dirac_migration'))
-  suite.addTest(MigrationTests('test_migration'))
-  suite.addTest(MigrationTests('test_migration_fullRes'))
+  #suite.addTest(MigrationTests('test_migration'))
+  #suite.addTest(MigrationTests('test_migration_fullRes'))
   return suite
 
 def hdf5_to_signature(base_path,datadir,dataglob,output_filename):
@@ -44,17 +44,18 @@ class SyntheticMigrationTests(unittest.TestCase):
     wo.opdict['outdir'] = 'TEST_Dirac'
     wo.opdict['search_grid']='grid.Taisne.search.hdr'
     wo.opdict['loclevel'] = 10
-    wo.opdict['load_ttimes_buf'] = True # Optimized in time, but you must be usre you're reading the right grid for the test
+    wo.opdict['load_ttimes_buf'] = True # Optimized in time, but you must be sure you're reading the right grid for the test
     wo.opdict['syn_addnoise']=False
-    wo.opdict['syn_amplitude']=1.0
+    wo.opdict['syn_snr']=1
+    wo.opdict['syn_amplitude']=[1.0]#,1.0]
     wo.opdict['syn_datalength']=20.0
     wo.opdict['syn_samplefreq']=100.0
     wo.opdict['syn_kwidth']=0.1
-    wo.opdict['syn_otime']=6.0
-    wo.opdict['syn_ix']=16
-    wo.opdict['syn_iy']=8
-    wo.opdict['syn_iz']=6
-    wo.opdict['syn_filename']='test_grid4D_hires.hdf5'
+    wo.opdict['syn_otime']=[6.0]#,7.4]
+    wo.opdict['syn_ix']=[28]#,4]
+    wo.opdict['syn_iy']=[20]#,4]
+    wo.opdict['syn_iz']=[2]#,8]
+    wo.opdict['syn_filename']='test_3sta'
 
     wo.verify_migration_options()
     wo.verify_location_options()
@@ -92,24 +93,45 @@ class SyntheticMigrationTests(unittest.TestCase):
 
     # extract the max stacks
     f_stack=h5py.File(stack_filename,'r')
-    max_val=f_stack['max_val']
+    max_val=f_stack['max_val_smooth']
     max_x=f_stack['max_x']
     max_y=f_stack['max_y']
     max_z=f_stack['max_z']
 
-
+    loclevel=1
     locs=trigger_locations_inner(max_val,max_x,max_y,max_z,loclevel,loclevel,stack_start_time,dt)
 
     self.assertTrue(len(locs)>0)
-    
+ 
+    from plot_mpl_article import plotDiracTest
+    plotDiracTest(test_info,'/home/nadege/waveloc/out/TEST_Dirac/fig',2)
+  
     #print locs
     # This is a dirac test, so only have one element in locs
-    imax=np.argmax([loc['max_trig'] for loc in locs])
-    trig_loc=locs[imax]
-    self.assertAlmostEqual(wo.opdict['syn_otime'],trig_loc['o_time'],2)
-    self.assertAlmostEqual(wo.opdict['syn_ix']*dx+x_orig,trig_loc['x_mean'])
-    self.assertAlmostEqual(wo.opdict['syn_iy']*dy+y_orig,trig_loc['y_mean'])
-    self.assertAlmostEqual(wo.opdict['syn_iz']*dz+z_orig,trig_loc['z_mean'])
+    list_max=[loc['max_trig'] for loc in locs]
+    list_max.sort()
+    a=list_max[-len(wo.opdict['syn_ix'])::]
+    list_max=[loc['max_trig'] for loc in locs]
+    list_imax=[]
+    for i in range(len(a)):
+      b=np.where(list_max==a[i])
+      list_imax.append(b[0][0])
+    list_imax.sort()
+
+    print list_max
+    print list_imax
+    print wo.opdict['syn_otime'],locs[list_imax[0]]['o_time']#,locs[list_imax[1]]['o_time']
+    print np.array(wo.opdict['syn_ix'])*dx+x_orig,locs[list_imax[0]]['x_mean']#,locs[list_imax[1]]['x_mean']
+    print np.array(wo.opdict['syn_iy'])*dy+y_orig,locs[list_imax[0]]['y_mean']#,locs[list_imax[1]]['y_mean']
+    print np.array(wo.opdict['syn_iz'])*dz+z_orig,locs[list_imax[0]]['z_mean']#,locs[list_imax[1]]['z_mean']
+
+    for index in range(len(wo.opdict['syn_ix'])):
+      imax=list_imax[index]
+      trig_loc=locs[imax]
+      self.assertAlmostEqual(wo.opdict['syn_otime'][index],trig_loc['o_time'],2)
+      self.assertAlmostEqual(wo.opdict['syn_ix'][index]*dx+x_orig,trig_loc['x_mean'])
+      self.assertAlmostEqual(wo.opdict['syn_iy'][index]*dy+y_orig,trig_loc['y_mean'])
+      self.assertAlmostEqual(wo.opdict['syn_iz'][index]*dz+z_orig,trig_loc['z_mean'])
   
     f_stack.close()
 
