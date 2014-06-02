@@ -304,6 +304,76 @@ class WavelocOptions(object):
     self.opdict['nbsta']=args.nbsta
     self.opdict['dd_loc']=args.dd_loc
 
+  def set_options(self):
+    self.opdict['base_path']=os.getenv('WAVELOC_PATH')
+
+    self.opdict['time']=True
+    self.opdict['verbose']=True
+
+    self.opdict['datadir']='Piton/2010-10-14'
+    self.opdict['outdir']='Piton/2010-10-14'
+
+    self.opdict['net_list']="YA"
+    self.opdict['sta_list']=['FJS','FLR','FOR','HDL','RVL','SNE','UV01','UV02','UV03','UV04','UV05','UV06','UV07','UV08','UV09','UV10','UV11','UV12','UV13','UV14','UV15']
+    self.opdict['comp_list']=["HHZ,HHE,HHN,HDA,HDF,HDT"]
+
+    self.opdict['dataless']='*.dataless'
+
+    self.opdict['resample']=False
+    self.opdict['fs']=100
+
+    self.opdict['c1']=20
+    self.opdict['c2']=35
+    self.opdict['kwin']=1.
+    self.opdict['krec']=True
+    self.opdict['kderiv']=True
+    self.opdict['gauss']=False
+    self.opdict['gthreshold']=10
+    self.opdict['mu']=0
+    self.opdict['sigma']=0.1
+
+    self.opdict['dataglob']="*filt.sac"
+    self.opdict['kurtglob']="*filt_kurt.sac"
+    self.opdict['gradglob']="*filt_kurt_grad.sac"
+    self.opdict['gaussglob']="*filt_kurt_grad_gauss.sac"
+
+    self.opdict['starttime']="2010-10-14T00:00:00.0Z"
+    self.opdict['endtime']="2010-10-14T16:00:00.0Z"
+    self.opdict['data_length']=600
+    self.opdict['data_overlap']=20
+
+    self.opdict['stations']="coord_stations_piton"
+    self.opdict['search_grid']="grid.Taisne.search.hdr"
+    self.opdict['time_grid']="Slow_len.100m.P"
+    self.opdict['load_ttimes_buf']=True
+
+    self.opdict['reloc']=False
+    self.opdict['reloc_snr']=12
+    self.opdict['auto_loclevel']=False
+    self.opdict['loclevel']=2000
+    
+    self.opdict['snr_limit']=5
+    self.opdict['snr_tr_limit']=5
+    self.opdict['sn_time']=3.0
+    self.opdict['n_kurt_min']=10
+
+    self.opdict['plot_tbefore']=4
+    self.opdict['plot_tafter']=10
+    self.opdict['plot_otime_window']=2.
+
+    self.opdict['xcorr_threshold']=0.7
+    self.opdict['xcorr_before']=0.5
+    self.opdict['xcorr_after']=4.0
+    self.opdict['xcorr_corr']="coeff"
+    self.opdict['xcorr_delay']="delay"
+
+    self.opdict['clus']=0.7
+    self.opdict['nbsta']=8
+
+    self.opdict['dd_loc']=False
+
+    self.opdict['new_kurtfile']=False
+
 
   def set_test_options(self):
     self.opdict['time']=True
