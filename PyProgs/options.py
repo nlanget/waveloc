@@ -317,10 +317,7 @@ class WavelocOptions(object):
 
     self.opdict['net_list']="ID"
     self.opdict['sta_list']="DAM,IJEN,KWUI,MLLR,POS,POSI,PSG,RAUN,TRWI"
-    #self.opdict['sta_list']="IJEN"
     self.opdict['comp_list']="HHZ,HHE,HHN,EHZ,EHE,EHN,BHZ,BHE,BHN"
-
-    #self.opdict['dataless']='*.dataless'
 
     self.opdict['resample']=True
     self.opdict['fs']=100
@@ -345,7 +342,7 @@ class WavelocOptions(object):
     self.opdict['data_length']=600
     self.opdict['data_overlap']=40
 
-    self.opdict['stations']="coord_stations_ijen"
+    self.opdict['stations']="coord_stations_ijen_utm"
     self.opdict['search_grid']="grid.ijen.search.hdr"
     self.opdict['time_grid']="ijen.P"
     self.opdict['load_ttimes_buf']=True
@@ -396,7 +393,7 @@ class WavelocOptions(object):
 
     self.opdict['time_grid'] = 'ijen.P'
     self.opdict['search_grid'] = 'grid.ijen.search.hdr'
-    self.opdict['stations'] = '../lib/coord_stations_ijen'
+    self.opdict['stations'] = '../lib/coord_stations_ijen_utm'
 
     self.opdict['resample'] = False
     self.opdict['fs'] = None

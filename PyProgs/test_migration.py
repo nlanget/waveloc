@@ -52,7 +52,7 @@ class SyntheticMigrationTests(unittest.TestCase):
     wo.opdict['syn_kwidth'] = 0.1
     wo.opdict['syn_otime'] = [10.0]
     wo.opdict['loclevel'] = 3
-    wo.opdict['stations'] = '/home/nadege/waveloc/lib/coord_stations_ijen'
+    wo.opdict['stations'] = '/home/nadege/waveloc/lib/coord_stations_ijen_utm'
     wo.opdict['sta_list'] = "IJEN,TRWI,RAUN,MLLR,KWUI,POSI,POS,PSG,DAM"
     wo.opdict['search_grid'] = 'grid.ijen.search.hdr'
     wo.opdict['syn_filename'] = 'Ijen_test_grid4D_hires.hdf5'
