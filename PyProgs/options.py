@@ -58,7 +58,7 @@ class WavelocOptions(object):
     # kurtogram
     self.opdict['new_kurtfile']=False 
 
- 
+
     # For now, continue to support command-line arguments
     # TODO : get rid of these evenutally for ease of maintenance
     self.p = argparse.ArgumentParser()
@@ -69,7 +69,7 @@ class WavelocOptions(object):
     self.p.add_argument('--verbose', '-v', action='store_true',
             default=self.opdict['verbose'], 
             help='print debugging information to stout')
-  
+
     self.p.add_argument('--datadir',action='store', 
             help="subdirectory of base_path/data")
     self.p.add_argument('--outdir', action='store', 
@@ -305,7 +305,81 @@ class WavelocOptions(object):
     self.opdict['dd_loc']=args.dd_loc
 
 
+  def set_options(self):
+
+    self.opdict['base_path']=os.getenv('WAVELOC_PATH')
+
+    self.opdict['time']=True
+    self.opdict['verbose']=True
+
+    self.opdict['datadir']='Ijen/2011-08-01'
+    self.opdict['outdir']='2011-08-01'
+
+    self.opdict['net_list']="ID"
+    self.opdict['sta_list']="DAM,IJEN,KWUI,MLLR,POS,POSI,PSG,RAUN,TRWI"
+    #self.opdict['sta_list']="IJEN"
+    self.opdict['comp_list']="HHZ,HHE,HHN,EHZ,EHE,EHN,BHZ,BHE,BHN"
+
+    #self.opdict['dataless']='*.dataless'
+
+    self.opdict['resample']=True
+    self.opdict['fs']=100
+
+    self.opdict['c1']=0.1
+    self.opdict['c2']=49
+    self.opdict['kwin']=3.
+    self.opdict['krec']=True
+    self.opdict['kderiv']=True
+    self.opdict['gauss']=True
+    self.opdict['gthreshold']=10
+    self.opdict['mu']=0
+    self.opdict['sigma']=0.1
+
+    self.opdict['dataglob']="*filt"
+    self.opdict['kurtglob']="*filt_kurt"
+    self.opdict['gradglob']="*filt_kurt_grad"
+    self.opdict['gaussglob']="*filt_kurt_grad_gauss"
+
+    self.opdict['starttime']="2011-08-01T00:00:00.0Z"
+    self.opdict['endtime']="2011-08-01T23:59:59.59Z"
+    self.opdict['data_length']=600
+    self.opdict['data_overlap']=40
+
+    self.opdict['stations']="coord_stations_ijen"
+    self.opdict['search_grid']="grid.ijen.search.hdr"
+    self.opdict['time_grid']="ijen.P"
+    self.opdict['load_ttimes_buf']=True
+
+    self.opdict['reloc']=False
+    self.opdict['reloc_snr']=12
+    self.opdict['auto_loclevel']=False
+    self.opdict['loclevel']=500
+
+    self.opdict['snr_limit']=5
+    self.opdict['snr_tr_limit']=5
+    self.opdict['sn_time']=3.0
+    self.opdict['n_kurt_min']=3
+
+    self.opdict['plot_tbefore']=4
+    self.opdict['plot_tafter']=15
+    self.opdict['plot_otime_window']=2.
+
+    self.opdict['xcorr_threshold']=0.7
+    self.opdict['xcorr_before']=0.5
+    self.opdict['xcorr_after']=4.0
+    self.opdict['xcorr_corr']="coeff"
+    self.opdict['xcorr_delay']="delay"
+
+    self.opdict['clus']=0.7
+    self.opdict['nbsta']=8
+
+    self.opdict['dd_loc']=False
+
+    self.opdict['new_kurtfile']=False
+
+
   def set_test_options(self):
+
     self.opdict['time']=True
     self.opdict['verbose']=True
 
@@ -314,7 +388,8 @@ class WavelocOptions(object):
     self.opdict['outdir']='TEST'
 
     self.opdict['net_list']='YA'
-    self.opdict['sta_list']="FJS,FLR,FOR,HDL,RVL,SNE,UV01,UV02,UV03,UV04,UV05,UV06,UV07,UV08,UV09,UV10,UV11,UV12,UV13,UV14,UV15"
+    #self.opdict['sta_list']="FJS,FLR,FOR,HDL,RVL,SNE,UV01,UV02,UV03,UV04,UV05,UV06,UV07,UV08,UV09,UV10,UV11,UV12,UV13,UV14,UV15"
+    self.opdict['sta_list']="UV06,UV08,UV10"
     self.opdict['comp_list']="HHZ"
 
     self.opdict['starttime']="2010-10-14T00:14:00.0Z"
@@ -389,7 +464,7 @@ class WavelocOptions(object):
           raise UserWarning('Environment variable WAVELOC_PATH not set \
                   correctly.')
       self.opdict['base_path']=base_path
-    
+
     base_path=self.opdict['base_path']
     lib_path=os.path.join(base_path,'lib')
     if not os.path.isdir(lib_path): 
@@ -664,7 +739,7 @@ class WavelocOptions(object):
   def _verify_clus(self):
     if not self.opdict.has_key('clus'):
         raise UserWarning('clus option not set')
-  
+
   def _verify_dd_loc(self):
     if not self.opdict.has_key('dd_loc'):
         raise UserWarning('dd_loc option not set')
@@ -856,7 +931,7 @@ class WavelocOptions(object):
     self._verify_xcorr_after()
     self._verify_xcorr_corr()
     self._verify_xcorr_delay()
- 
+
     base_path=self.opdict['base_path']
     locdir=os.path.join(base_path,'out',self.opdict['outdir'],'loc')
     locfile=os.path.join(locdir,'locations.dat')
@@ -943,7 +1018,7 @@ class WavelocOptions(object):
     self._verify_syn_iy()
     self._verify_syn_iz()
     self._verify_syn_filename()
-          
+
 
 
   def verify_plotting_options(self):
@@ -996,6 +1071,3 @@ class WavelocOptions(object):
     locfile=os.path.join(locdir,'locations_prob.hdf5')
     if not os.path.isfile(locfile): 
         raise UserWarning('Locations file %s does not exist.'%locfile)
-
-
-   
