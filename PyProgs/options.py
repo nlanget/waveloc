@@ -380,73 +380,72 @@ class WavelocOptions(object):
 
   def set_test_options(self):
 
-    self.opdict['time']=True
-    self.opdict['verbose']=True
+    self.opdict['time'] = True
+    self.opdict['verbose'] = True
 
-    self.opdict['test_datadir']='test_data'
-    self.opdict['datadir']='TEST'
-    self.opdict['outdir']='TEST'
+    self.opdict['test_datadir'] = 'test_data'
+    self.opdict['datadir'] = 'TEST'
+    self.opdict['outdir'] = 'TEST'
 
-    self.opdict['net_list']='YA'
-    #self.opdict['sta_list']="FJS,FLR,FOR,HDL,RVL,SNE,UV01,UV02,UV03,UV04,UV05,UV06,UV07,UV08,UV09,UV10,UV11,UV12,UV13,UV14,UV15"
-    self.opdict['sta_list']="UV06,UV08,UV10"
-    self.opdict['comp_list']="HHZ"
+    self.opdict['net_list'] = 'ID'
+    self.opdict['sta_list'] = "DAM,IJEN,KWUI,MLLR,POS,POSI,PSG,RAUN,TRWI"
+    self.opdict['comp_list'] = "HHZ"
 
-    self.opdict['starttime']="2010-10-14T00:14:00.0Z"
-    self.opdict['endtime']="2010-10-14T00:18:00.0Z"
+    self.opdict['starttime'] = "2010-10-14T00:14:00.0Z"
+    self.opdict['endtime'] = "2010-10-14T00:18:00.0Z"
 
-    self.opdict['time_grid']='Slow_len.100m.P'
-    self.opdict['search_grid']='test_grid.search.hdr'
-    self.opdict['stations']='coord_stations_test'
+    self.opdict['time_grid'] = 'ijen.P'
+    self.opdict['search_grid'] = 'grid.ijen.search.hdr'
+    self.opdict['stations'] = '../lib/coord_stations_ijen'
 
-    self.opdict['resample']=False
-    self.opdict['fs']=None
+    self.opdict['resample'] = False
+    self.opdict['fs'] = None
 
-    self.opdict['c1']=4.0
-    self.opdict['c2']=10.0
+    self.opdict['c1'] = 4.0
+    self.opdict['c2'] = 10.0
 
-    self.opdict['kwin']=4
-    self.opdict['krec']=False
-    self.opdict['kderiv']=True
-    self.opdict['gauss']=False
-    self.opdict['gthreshold']=0.1
-    self.opdict['mu']=0
-    self.opdict['sigma']=0.1
+    self.opdict['kwin'] = 4
+    self.opdict['krec'] = False
+    self.opdict['kderiv'] = True
+    self.opdict['gauss'] = False
+    self.opdict['gthreshold'] = 0.1
+    self.opdict['mu'] = 0
+    self.opdict['sigma'] = 0.1
 
-    self.opdict['data_length']=600
-    self.opdict['data_overlap']=20
+    self.opdict['data_length'] = 600
+    self.opdict['data_overlap'] = 20
 
-    self.opdict['dataglob']='*filt.mseed'
-    self.opdict['kurtglob']='*kurt.mseed'
-    self.opdict['gradglob']='*grad.mseed'
-    self.opdict['gaussglob']='*gauss.mseed'
+    self.opdict['dataglob'] = '*filt.mseed'
+    self.opdict['kurtglob'] = '*kurt.mseed'
+    self.opdict['gradglob'] = '*grad.mseed'
+    self.opdict['gaussglob'] = '*gauss.mseed'
 
     self.opdict['load_ttimes_buf']=True
 
-    self.opdict['reloc']=False
-    self.opdict['reloc_snr']=12.
+    self.opdict['reloc'] = False
+    self.opdict['reloc_snr'] = 12.
 
-    self.opdict['auto_loclevel']=False
-    self.opdict['loclevel']=50.0
-    self.opdict['snr_limit']=10.0
-    self.opdict['snr_tr_limit']=10.0
-    self.opdict['sn_time']=10.0
-    self.opdict['n_kurt_min']=4
+    self.opdict['auto_loclevel'] = False
+    self.opdict['loclevel'] = 3
+    self.opdict['snr_limit'] = 10.0
+    self.opdict['snr_tr_limit'] = 10.0
+    self.opdict['sn_time'] = 10.0
+    self.opdict['n_kurt_min'] = 4
 
-    self.opdict['syn_addnoise']=False
+    self.opdict['syn_addnoise'] = False
 
-    self.opdict['new_kurtfile']=False
+    self.opdict['new_kurtfile'] = False
 
-    self.opdict['xcorr_threshold']=0.7
-    self.opdict['xcorr_before']=0.5
-    self.opdict['xcorr_after']=6.0
-    self.opdict['xcorr_corr']='corr'
-    self.opdict['xcorr_delay']='delay'
+    self.opdict['xcorr_threshold'] = 0.7
+    self.opdict['xcorr_before'] = 0.5
+    self.opdict['xcorr_after'] = 6.0
+    self.opdict['xcorr_corr'] = 'corr'
+    self.opdict['xcorr_delay'] = 'delay'
 
-    self.opdict['clus']=0.8
-    self.opdict['nbsta']=3
+    self.opdict['clus'] = 0.8
+    self.opdict['nbsta'] = 3
 
-    self.opdict['dd_loc']=True
+    self.opdict['dd_loc'] = True
 
 
   def verify_base_path(self):
