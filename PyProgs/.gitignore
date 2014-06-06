@@ -27,4 +27,4 @@ MANIFEST
 _build
 /plot/
 /test_data/
-*.dataless
+/lib/*.dataless
