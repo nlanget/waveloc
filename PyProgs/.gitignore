@@ -1,0 +1,27 @@
+# ignore files
+/data/
+/out/
+/test_figures/
+*.buf
+!/test_data/*.buf
+*.ttimes
+/lib/*.hdr
+/sphinx/_*
+/PyProgs/*.dat
+*.pyc
+*.swp
+*.swo
+*.tgz
+*.prof
+*.png
+/nll/
+.DS_store
+/test_data/*.tgz
+/test_data/time_grids/
+/lib/*test*
+*ijen*
+*hdf5
+MANIFEST
+/build/
+/dist/
+_build
