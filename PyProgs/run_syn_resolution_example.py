@@ -105,6 +105,13 @@ def analyseLocs(locs, wo, test_info):
                              (iz_true*dy+z_orig - aloc['z_mean'])**2)
                      for aloc in locs]
 
+    print "LOCATIONS"
+    for aloc in locs:
+      ix_found = int(round((aloc['x_mean']-x_orig)*1./dx))
+      iy_found = int(round((aloc['y_mean']-y_orig)*1./dy))
+      iz_found = int(round((aloc['z_mean']-z_orig)*1./dz))
+      print ix_found,iy_found,iz_found
+
     # This is a dirac test, but we may have more than one loc
     # (secondary maxima) so for safety, pull out best loc
     if n_locs > 0:

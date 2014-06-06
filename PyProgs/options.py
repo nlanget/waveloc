@@ -428,6 +428,7 @@ class WavelocOptions(object):
     self.opdict['snr_tr_limit'] = 10.0
     self.opdict['sn_time'] = 10.0
     self.opdict['n_kurt_min'] = 4
+    self.opdict['syn_snr'] = 10
 
     self.opdict['syn_addnoise'] = False
 

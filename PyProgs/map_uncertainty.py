@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 
 
-def mapping():
+def mapping_xyz():
 
   from NllGridLib import read_stations_file
   stations = read_stations_file('/home/nadege/waveloc/lib/coord_stations_ijen_utm')
@@ -20,7 +20,7 @@ def mapping():
   ysta = np.array([np.argmin(np.abs(stations[key]['y']-y)) for key in sorted(stations)])
   zsta = np.array([np.argmin(np.abs(-stations[key]['elev']-z)) for key in sorted(stations)])
 
-  f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/incertitude.hdf5','r')
+  f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/unc_err_smooth.hdf5','r')
   #f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/uncertainty_ok.hdf5','r')
   unc_grid_x = f['unc_grid_x']
   unc_grid_y = f['unc_grid_y']
@@ -35,7 +35,6 @@ def mapping():
   argsort = np.argsort(unc_grid_x[:])
   print argsort[-80:]
   print np.array(unc_grid_x)[argsort[-80:]]
-  sys.exit()
 
   #f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/erreur.hdf5','r')
   #unc_grid_x = f['err_grid_x']
@@ -169,7 +168,7 @@ def mapping():
   ax.set_yticklabels(zlab)
   ax.set_title('Uncertainty on z')
 
-  plt.savefig('/home/nadege/Desktop/unc.png')
+  plt.savefig('/home/nadege/Desktop/unc_smooth_40.png')
 
 
 #  fig = plt.figure()
@@ -190,6 +189,57 @@ def mapping():
   plt.show()
 
 
+def mapping_error():
+
+  from NllGridLib import read_stations_file
+  stations = read_stations_file('/home/nadege/waveloc/lib/coord_stations_ijen_utm')
+
+  nx,ny,nz = 41,41,11
+  dx,dy,dz = 0.5,0.5,0.5
+  x_orig,y_orig,z_orig = -10,-10,-3
+  x = np.arange(x_orig,x_orig+dx*nx,dx)
+  y = np.arange(y_orig,y_orig+dy*ny,dy)
+  z = np.arange(z_orig,z_orig+dz*nz,dz)
+
+  xsta = np.array([np.argmin(np.abs(stations[key]['x']-x)) for key in sorted(stations)])
+  ysta = np.array([np.argmin(np.abs(stations[key]['y']-y)) for key in sorted(stations)])
+  zsta = np.array([np.argmin(np.abs(-stations[key]['elev']-z)) for key in sorted(stations)])
+
+  f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/unc_err_smooth.hdf5','r')
+  err_grid_x = f['err_grid_x']
+  err_grid_y = f['err_grid_y']
+  err_grid_z = f['err_grid_z']
+
+  error = np.sqrt(err_grid_x[:]**2 + err_grid_y[:]**2 + err_grid_z[:]**2)
+  grid_3D = error.reshape(nx,ny,nz)
+
+  iz = 6
+  cut_xy = grid_3D[:,:,iz]
+  vmin, vmax = 0, 2.5
+  xlab = np.array(np.append([0],x[0::10]),dtype=int)
+  ylab = np.array(np.append(y[0::10],[0]),dtype=int)
+  extent = (0,np.size(cut_xy,0),0,np.size(cut_xy,1))
+  #extent = (np.min(x),np.max(x),np.min(y),np.max(y))
+
+  fig = plt.figure()
+  fig.set_facecolor('white')
+  ax = fig.add_subplot(111)
+  ax.plot(xsta,ysta,'kv')
+  cax = ax.imshow(np.flipud(cut_xy),vmin=0,vmax=vmax,extent=extent)
+  ax.set_xlim([0,np.size(cut_xy,0)])
+  ax.set_ylim([0,np.size(cut_xy,1)])
+  #ax.set_xticklabels(xlab)
+  #ax.set_yticklabels(ylab[::-1])
+  ax.set_xlabel('x utm (km)')
+  ax.set_ylabel('y utm (km)')
+  pos = list(ax.get_position().bounds)
+  fig.text(pos[0]-0.08,pos[1]+pos[3], 'z=%.1f km'%-z[iz], fontsize=12)
+  cbar = fig.colorbar(cax,ticks=[vmin,(vmin+vmax)/2.,vmax])
+  cbar.ax.set_yticklabels([vmin,(vmin+vmax)/2.,'> %.1f'%vmax])
+  plt.savefig('/home/nadege/Desktop/Ijen_smooth_error_z%.1fkm.png'%-z[iz])
+  plt.show()
+
 
 if __name__ == '__main__':
-   mapping()
+   mapping_xyz()
+   #mapping_error()
