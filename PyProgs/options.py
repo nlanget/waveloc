@@ -312,8 +312,8 @@ class WavelocOptions(object):
     self.opdict['time']=True
     self.opdict['verbose']=True
 
-    self.opdict['datadir']='Ijen/2011-08-01'
-    self.opdict['outdir']='2011-08-01'
+    self.opdict['datadir']='Ijen/'
+    self.opdict['outdir']='Ijen'
 
     self.opdict['net_list']="ID"
     self.opdict['sta_list']="DAM,IJEN,KWUI,MLLR,POS,POSI,PSG,RAUN,TRWI"
@@ -327,19 +327,19 @@ class WavelocOptions(object):
     self.opdict['kwin']=3.
     self.opdict['krec']=True
     self.opdict['kderiv']=True
-    self.opdict['gauss']=True
+    self.opdict['gauss']=False
     self.opdict['gthreshold']=10
     self.opdict['mu']=0
     self.opdict['sigma']=0.1
 
-    self.opdict['dataglob']="*filt"
-    self.opdict['kurtglob']="*filt_kurt"
-    self.opdict['gradglob']="*filt_kurt_grad"
+    self.opdict['dataglob']="*_FILT"
+    self.opdict['kurtglob']="*_KURT"
+    self.opdict['gradglob']="*_GRAD"
     self.opdict['gaussglob']="*filt_kurt_grad_gauss"
 
     self.opdict['starttime']="2011-08-01T00:00:00.0Z"
     self.opdict['endtime']="2011-08-01T23:59:59.59Z"
-    self.opdict['data_length']=600
+    self.opdict['data_length']=120
     self.opdict['data_overlap']=40
 
     self.opdict['stations']="coord_stations_ijen_utm"
