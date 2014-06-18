@@ -103,7 +103,7 @@ def generateSyntheticDirac(opdict,time_grids=None):
       for key,delay in ttimes.iteritems():
         if index == 0:
           if syn_addnoise:
-            s_snr = opdict['syn_snr']       
+            s_snr = opdict['syn_snr']
             s = np.random.rand(s_npts)*s_amplitude/s_snr
           else:
             s = np.zeros(s_npts)
