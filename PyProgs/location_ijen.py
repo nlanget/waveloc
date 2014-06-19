@@ -34,9 +34,9 @@ def ijen():
   from OP_waveforms import *
 
   path = '../data/Ijen'
-  list_sta = ['DAM','IJEN','KWUI','MLLR','POS','POSI','PSG','RAUN','TRWI']
+  list_sta = ['TRWI']
   for sta in list_sta:
-    list_files = glob.glob(os.path.join(path,'*%s*Z*'%sta))
+    list_files = glob.glob(os.path.join(path,'*%s.*Z*'%sta))
     list_files.sort()
     for file in list_files:
       if os.path.isfile(file):
@@ -47,22 +47,20 @@ def ijen():
         wf.bp_filter(1,10)
         x = wf.values
 
-        #kurt_file = '%s/kurt/%s_KURT'%(os.path.dirname(file),os.path.basename(file))
-        kurt_file = '/media/disk/location/%s_KURT'%os.path.basename(file)
+        kurt_file = '/media/disk/location/%s/%s_KURT'%(sta.lower(),os.path.basename(file))
         if not os.path.isfile(kurt_file):
-          print "computing kurtosis..."
           kurt_window = 3.
           wf.process_kurtosis(kurt_window,recursive=True,pre_taper=True,post_taper=True)
           #wf.values[:1700] = 0
+          print "Write kurtosis in %s"%kurt_file
           wf.write_to_file_filled(kurt_file,format='MSEED',fill_value=0)
           x_kurt = wf.values
           os.symlink(kurt_file,os.path.join(path,os.path.basename(kurt_file)))
 
-        #grad_file = '%s/grad/%s_GRAD'%(os.path.dirname(file),os.path.basename(file))
-        grad_file = '/media/disk/location/%s_GRAD'%os.path.basename(file)
+        grad_file = '/media/disk/location/%s/%s_GRAD'%(sta.lower(),os.path.basename(file))
         if not os.path.isfile(grad_file):
-          print "computing first derivative"
           wf.take_positive_derivative(pre_taper=True,post_taper=True)
+          print "Write gradient in %s"%grad_file
           wf.write_to_file_filled(grad_file,format='MSEED',fill_value=0)
           x_grad = wf.values
           os.symlink(grad_file,os.path.join(path,os.path.basename(grad_file)))
@@ -89,7 +87,8 @@ def sds_link():
 
   data_path = '/media/disk/location'
   dest_path = '../data/Ijen'
-  list_sta = ['DAM','IJEN','KWUI','MLLR','POS','POSI','PSG','RAUN','TRWI']
+  #list_sta = ['DAM','IJEN','KWUI','MLLR','POS','POSI','PSG','RAUN','TRWI']
+  list_sta = ['POSI']
   for sta in list_sta:
     station = sta.lower()
     list_files = glob.glob(os.path.join(data_path,station,'*Z*'))
@@ -143,6 +142,10 @@ def migration_and_location(opdict):
   write_header_options(loc_file,opdict)
 
   for date in dates:
+
+    if date != 20120312085822:
+      continue
+
     data = {}
     data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
     kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
@@ -156,7 +159,12 @@ def migration_and_location(opdict):
     for file in grad_files:
       wf = Waveform()              
       wf.read_from_file(file)
-      data[wf.station] = wf.values
+      station = wf.station
+      if wf.station == 'A2181':
+        station = 'PSG'
+      if wf.station == 'A2184':
+        station = 'POS'
+      data[station] = wf.values
       start_time = wf.starttime
 
     logging.info('Doing migration to %s'%grid_file)
@@ -193,14 +201,14 @@ def migration_and_location(opdict):
     # close the stack and grid files 
     f_stack.close()
     f.close()
-    logging.info('Saved 4D grid to file %s'%grid_file)
+    os.remove(grid_file)
 
     for loc in locs:
       loc['o_time'] = start_time + loc['o_time']
       if number_good_kurtosis_for_location(kurt_files,data_files,loc,time_grids,snr_limit,snr_tr_limit,sn_time) > n_kurt_min:
         logging.info("Max = %.2f, %s - %.2fs + %.2f s, x=%.4f pm %.4f km, y=%.4f pm %.4f km, z=%.4f pm %.4f km"%(loc['max_trig'],loc['o_time'].isoformat(),loc['o_err_left'], loc['o_err_right'],loc['x_mean'],loc['x_sigma'],loc['y_mean'],loc['y_sigma'],loc['z_mean'],loc['z_sigma']))
         loc_file.write("Max = %.2f, %s - %.2f s + %.2f s, x= %.4f pm %.4f km, y= %.4f pm %.4f km, z= %.4f pm %.4f km\n"%(loc['max_trig'],loc['o_time'].isoformat(),loc['o_err_left'], loc['o_err_right'],loc['x_mean'],loc['x_sigma'],loc['y_mean'],loc['y_sigma'],loc['z_mean'],loc['z_sigma']))
-        n_ok=n_ok+1
+        n_ok = n_ok+1
 
   loc_file.close()
 
@@ -209,25 +217,34 @@ def migration_and_location(opdict):
 def location_only(opdict):
 
   from locations_trigger import trigger_locations_inner, number_good_kurtosis_for_location,write_header_options
-  from h5py
+  import h5py
+  from filters import smooth
+  from obspy.core import utcdatetime
 
   base_path = opdict['base_path']
+  data_dir = os.path.join(base_path,'data',opdict['datadir'])
+
+  from hdf5_grids import get_interpolated_time_grids
+  time_grids = get_interpolated_time_grids(opdict)
 
   snr_limit = opdict['snr_limit']
   snr_tr_limit = opdict['snr_tr_limit']
   sn_time = opdict['sn_time']
   n_kurt_min = opdict['n_kurt_min']
 
-  dt = 1./optdict['fs']
+  dt = 1./opdict['fs']
+  loclevel = opdict['loclevel']
 
   n_ok = 0
   loc_filename = os.path.join(base_path,'out',opdict['outdir'],'loc','locations.dat')
   loc_file = open(loc_filename,'w')
   write_header_options(loc_file,opdict)
 
-  stack_files = glog.glob(os.path.join(base_path,'out',opdict['outdir'],'stack','*'))
+  stack_files = glob.glob(os.path.join(base_path,'out',opdict['outdir'],'stack','*'))
   stack_files.sort()
   for stack_filename in stack_files:
+    date = stack_filename.split('_')[3].split('.')[0]
+    date_utc = utcdatetime.UTCDateTime(date)-20
     f_stack = h5py.File(stack_filename,'r')
     max_val = f_stack['max_val']
     max_x = f_stack['max_x']
@@ -240,11 +257,15 @@ def location_only(opdict):
     f_stack.close()
 
     for loc in locs:
-      loc['o_time'] = start_time + loc['o_time']
+      loc['o_time'] = date_utc + loc['o_time']
+      data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
+      kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
+      data_files.sort()
+      kurt_files.sort()
       if number_good_kurtosis_for_location(kurt_files,data_files,loc,time_grids,snr_limit,snr_tr_limit,sn_time) > n_kurt_min:
         logging.info("Max = %.2f, %s - %.2fs + %.2f s, x=%.4f pm %.4f km, y=%.4f pm %.4f km, z=%.4f pm %.4f km"%(loc['max_trig'],loc['o_time'].isoformat(),loc['o_err_left'], loc['o_err_right'],loc['x_mean'],loc['x_sigma'],loc['y_mean'],loc['y_sigma'],loc['z_mean'],loc['z_sigma']))
         loc_file.write("Max = %.2f, %s - %.2f s + %.2f s, x= %.4f pm %.4f km, y= %.4f pm %.4f km, z= %.4f pm %.4f km\n"%(loc['max_trig'],loc['o_time'].isoformat(),loc['o_err_left'], loc['o_err_right'],loc['x_mean'],loc['x_sigma'],loc['y_mean'],loc['y_sigma'],loc['z_mean'],loc['z_sigma']))
-        n_ok=n_ok+1
+        n_ok = n_ok+1
 
   loc_file.close()
 
@@ -266,5 +287,5 @@ if __name__ == '__main__':
   wo.verify_migration_options()
   wo.verify_location_options()
 
-  migration_and_location(wo.opdict)
+  #migration_and_location(wo.opdict)
   location_only(wo.opdict)

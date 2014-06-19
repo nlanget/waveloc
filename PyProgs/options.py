@@ -352,10 +352,10 @@ class WavelocOptions(object):
     self.opdict['auto_loclevel']=False
     self.opdict['loclevel']=500
 
-    self.opdict['snr_limit']=5
-    self.opdict['snr_tr_limit']=5
+    self.opdict['snr_limit']=1
+    self.opdict['snr_tr_limit']=1
     self.opdict['sn_time']=3.0
-    self.opdict['n_kurt_min']=3
+    self.opdict['n_kurt_min']=1
 
     self.opdict['plot_tbefore']=4
     self.opdict['plot_tafter']=15
