@@ -36,7 +36,7 @@ def ijen():
   path = '../data/Ijen'
   list_sta = ['TRWI']
   for sta in list_sta:
-    list_files = glob.glob(os.path.join(path,'*%s.*Z*'%sta))
+    list_files = glob.glob(os.path.join(path,'*%s.*Z*FILT'%sta))
     list_files.sort()
     for file in list_files:
       if os.path.isfile(file):
@@ -44,7 +44,7 @@ def ijen():
         wf = Waveform()
         wf.read_from_file(file)
         wf.rmean()
-        wf.bp_filter(1,10)
+        #wf.bp_filter(1,10)
         x = wf.values
 
         kurt_file = '/media/disk/location/%s/%s_KURT'%(sta.lower(),os.path.basename(file))
@@ -141,10 +141,9 @@ def migration_and_location(opdict):
   loc_file = open(loc_filename,'w')
   write_header_options(loc_file,opdict)
 
-  for date in dates:
+  for idate,date in enumerate(dates):
 
-    if date != 20120312085822:
-      continue
+    print "\nEVENT NUMBER %d - %d"%(idate,date)
 
     data = {}
     data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
@@ -162,6 +161,8 @@ def migration_and_location(opdict):
       station = wf.station
       if wf.station == 'A2181':
         station = 'PSG'
+      if wf.station == 'A2182':
+        station = 'DAM'
       if wf.station == 'A2184':
         station = 'POS'
       data[station] = wf.values
@@ -171,13 +172,14 @@ def migration_and_location(opdict):
     f = h5py.File(grid_file,'w')
     stack_grid = f.create_dataset('stack_grid',(n_buf,npts),'f',chunks=(1,npts))
     stack_shift_time = migrate_4D_stack(data,delta,time_grids,stack_grid)
+    stack_start_time = start_time - stack_shift_time
     n_buf,nt = stack_grid.shape
 
     # add useful information to dataset
     for key,value in grid_info.iteritems():
       stack_grid.attrs[key] = value
     stack_grid.attrs['dt'] = delta
-    stack_grid.attrs['start_time'] = -stack_shift_time
+    stack_grid.attrs['start_time'] = stack_start_time.isoformat()
 
     # extract max-stack
     logging.info('Extracting max_val etc. to %s'%stack_file)
@@ -187,7 +189,7 @@ def migration_and_location(opdict):
     for name in f_stack:
       dset = f_stack[name]
       logging.debug('After extract_max_values : %s %f %f'%(name,np.max(dset),np.sum(dset)))
-      dset.attrs['start_time'] = -stack_shift_time
+      dset.attrs['start_time'] = stack_start_time.isoformat()
       dset.attrs['dt'] = delta
 
     max_val = f_stack['max_val']
@@ -196,7 +198,7 @@ def migration_and_location(opdict):
     max_z = f_stack['max_z']
     max_val_smoothed = smooth(max_val[:])
 
-    locs = trigger_locations_inner(max_val_smoothed,max_x,max_y,max_z,loclevel,loclevel,-stack_shift_time,delta)
+    locs = trigger_locations_inner(max_val_smoothed,max_x,max_y,max_z,loclevel,loclevel,stack_start_time,delta)
 
     # close the stack and grid files 
     f_stack.close()
@@ -204,7 +206,7 @@ def migration_and_location(opdict):
     os.remove(grid_file)
 
     for loc in locs:
-      loc['o_time'] = start_time + loc['o_time']
+      #loc['o_time'] = start_time + loc['o_time']
       if number_good_kurtosis_for_location(kurt_files,data_files,loc,time_grids,snr_limit,snr_tr_limit,sn_time) > n_kurt_min:
         logging.info("Max = %.2f, %s - %.2fs + %.2f s, x=%.4f pm %.4f km, y=%.4f pm %.4f km, z=%.4f pm %.4f km"%(loc['max_trig'],loc['o_time'].isoformat(),loc['o_err_left'], loc['o_err_right'],loc['x_mean'],loc['x_sigma'],loc['y_mean'],loc['y_sigma'],loc['z_mean'],loc['z_sigma']))
         loc_file.write("Max = %.2f, %s - %.2f s + %.2f s, x= %.4f pm %.4f km, y= %.4f pm %.4f km, z= %.4f pm %.4f km\n"%(loc['max_trig'],loc['o_time'].isoformat(),loc['o_err_left'], loc['o_err_right'],loc['x_mean'],loc['x_sigma'],loc['y_mean'],loc['y_sigma'],loc['z_mean'],loc['z_sigma']))
@@ -270,6 +272,126 @@ def location_only(opdict):
   loc_file.close()
 
 
+def plot_locations(opdict):
+
+  from OP_waveforms import *
+  from NllGridLib import read_stations_file, read_hdr_file
+  import h5py
+  from migration import migrate_4D_stack, extract_max_values
+  from locations_trigger import read_locs_from_file
+  import matplotlib.pyplot as plt
+  from plot_mpl import plotLocationGrid, plotDiracTest
+
+  base_path = opdict['base_path']
+  data_dir = os.path.join(base_path,'data',opdict['datadir'])
+  outdir = os.path.join(base_path,'out',opdict['outdir'])
+  locdir = os.path.join(outdir,'loc')
+
+  dataglob = opdict['dataglob']
+
+  grid_filename_base = os.path.join(base_path,'lib',opdict['time_grid'])
+  search_grid_filename = os.path.join(base_path,'lib',opdict['search_grid'])
+  grid_info = read_hdr_file(search_grid_filename)
+
+  nx = grid_info['nx']
+  ny = grid_info['ny']
+  nz = grid_info['nz']
+  n_buf = nx*ny*nz
+
+  npts = int(opdict['data_length']*opdict['fs'])
+  delta = 1./opdict['fs']
+
+  from hdf5_grids import get_interpolated_time_grids
+  time_grids = get_interpolated_time_grids(opdict)
+
+  import pandas as pd
+  df = pd.read_csv('../lib/Ijen_list_vt.csv',index_col=False)
+  dates = df.index
+
+  stack_files = glob.glob(os.path.join(outdir,'stack','*.hdf5'))
+  stack_files.sort()
+
+  date_list, d_utc = [],[]
+  for sfile in stack_files:
+    d = sfile.split('_')[3].split('.')[0]
+    date_list.append(d)
+    d_utc.append(utcdatetime.UTCDateTime(d))
+
+  loc_file = os.path.join(locdir,'locations_notfull.dat')
+  locs = read_locs_from_file(loc_file)
+
+  for iloc,loc in enumerate(locs):
+
+    t_orig = loc['o_time']
+    diff = [np.abs(t_orig-d) for d in d_utc]
+    tmin = np.argsort(diff)[0]
+    stack_file = stack_files[tmin]
+    date = date_list[tmin]
+
+    print "LOCATION NUMBER %d - %s - %s"%(iloc,date,loc['o_time'])
+
+    data = {}
+    data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
+    kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
+    grad_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['gradglob'])))
+    data_files.sort()
+    kurt_files.sort()
+    grad_files.sort()
+    filename = '%s_%s.hdf5'%(opdict['outdir'],date)
+    grid_file = os.path.join(outdir,'grid',filename)
+    for file in grad_files:
+      wf = Waveform()              
+      wf.read_from_file(file)
+      station = wf.station
+      if wf.station == 'A2181':
+        station = 'PSG'
+      if wf.station == 'A2182':
+        station = 'DAM'
+      if wf.station == 'A2184':
+        station = 'POS'
+      data[station] = wf.values
+      start_time = wf.starttime
+
+    logging.info('Doing migration to %s'%grid_file)
+    f = h5py.File(grid_file,'w')
+    stack_grid = f.create_dataset('stack_grid',(n_buf,npts),'f',chunks=(1,npts))
+    stack_shift_time = migrate_4D_stack(data,delta,time_grids,stack_grid)
+    stack_start_time = start_time - stack_shift_time
+    n_buf,nt = stack_grid.shape
+
+    # add useful information to dataset
+    for key,value in grid_info.iteritems():
+      stack_grid.attrs[key] = value
+    stack_grid.attrs['dt'] = delta
+    stack_grid.attrs['start_time'] = stack_start_time.isoformat()
+
+    # extract max-stack
+    f_stack = h5py.File(stack_file,'r')
+
+    max_val = f_stack['max_val']
+    max_x = f_stack['max_x']
+    max_y = f_stack['max_y']
+    max_z = f_stack['max_z']
+    max_val_smoothed = smooth(max_val[:])
+
+    # close the stack and grid files 
+    f_stack.close()
+    f.close()
+
+    info = {}
+    info['dat_file'] = grid_file
+    info['stack_file'] = stack_file
+    info['grid_shape'] = nx,ny,nz,nt
+    info['grid_spacing'] = grid_info['dx'],grid_info['dy'],grid_info['dz'],delta
+    info['grid_orig'] = grid_info['x_orig'],grid_info['y_orig'],grid_info['z_orig']
+    info['start_time'] = stack_start_time
+
+    figdir = os.path.join(outdir,'fig')
+    plotLocationGrid(loc,info,figdir,2.)
+    plt.show()
+
+    os.remove(grid_file)
+
 
 if __name__ == '__main__':
 
@@ -288,4 +410,5 @@ if __name__ == '__main__':
   wo.verify_location_options()
 
   #migration_and_location(wo.opdict)
-  location_only(wo.opdict)
+  #location_only(wo.opdict)
+  plot_locations(wo.opdict)
