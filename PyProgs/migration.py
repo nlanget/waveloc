@@ -205,6 +205,7 @@ def do_migration_loop_continuous(opdict, data, delta, start_time, grid_info, tim
   if not keep_grid: 
     logging.info('Removing grid file %s'%grid_filename)
     os.remove(grid_filename)
+
  
 def migrate_4D_stack(data, delta, time_grids, stack_grid):
   from NllGridLib import read_hdr_file
@@ -270,6 +271,7 @@ def migrate_4D_stack(data, delta, time_grids, stack_grid):
 
   # end
   return stack_shift_time
+
 
 def _do_stack(ib,n_wf_ids,wf_ids,stack_grid,data,min_npts,n_lens,start_indexes,end_indexes,start_index,norm_stack_len):
 

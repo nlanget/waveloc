@@ -322,8 +322,8 @@ class WavelocOptions(object):
     self.opdict['resample']=True
     self.opdict['fs']=100
 
-    self.opdict['c1']=0.1
-    self.opdict['c2']=49
+    self.opdict['c1']=1
+    self.opdict['c2']=10
     self.opdict['kwin']=3.
     self.opdict['krec']=True
     self.opdict['kderiv']=True
@@ -340,7 +340,7 @@ class WavelocOptions(object):
     self.opdict['starttime']="2011-08-01T00:00:00.0Z"
     self.opdict['endtime']="2011-08-01T23:59:59.59Z"
     self.opdict['data_length']=120
-    self.opdict['data_overlap']=40
+    self.opdict['data_overlap']=120
 
     self.opdict['stations']="coord_stations_ijen_utm"
     self.opdict['search_grid']="grid.ijen.search.hdr"

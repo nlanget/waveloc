@@ -111,6 +111,7 @@ def analyseLocs(locs, wo, test_info):
       iy_found = int(round((aloc['y_mean']-y_orig)*1./dy))
       iz_found = int(round((aloc['z_mean']-z_orig)*1./dz))
       print ix_found,iy_found,iz_found
+    print "end locations"
 
     # This is a dirac test, but we may have more than one loc
     # (secondary maxima) so for safety, pull out best loc
@@ -182,6 +183,7 @@ def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
         # do analysis for this point
         n_locs, best_dist, best_dt, trig_loc = analyseLocs(locs, wo, test_info)
         print ix, iy, iz, n_locs, best_dist, best_dt
+        raw_input("Pause")
 
         # save into array
         dist_grid[ib_dec] = best_dist
@@ -292,7 +294,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
         plt.ylabel('y (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=[0, 0.1, 0.2, 0.3, 0.4])
+        plt.colorbar(orientation='horizontal', ticks=range(0,np.ceil(vmax_dist),1))
         plt.scatter(sta_x, sta_y)
         plt.title('Distance (km)')
 
@@ -303,7 +305,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=[0, 1, 2, 3])
+        plt.colorbar(orientation='horizontal', ticks=range(1,vmax_nloc+1))
         plt.scatter(sta_x, sta_y)
         plt.title('No of locs')
 
@@ -314,7 +316,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=[0, 0.01, 0.02, 0.03])
+        plt.colorbar(orientation='horizontal', ticks=[-1,-.5,0,.5,1])
         plt.scatter(sta_x, sta_y)
         plt.title('Dt origin time (s)')
 
@@ -326,6 +328,6 @@ if __name__ == '__main__':
     plot_filename = 'Ijen_waveloc_resolution.png'
 
     wo, grid_info = setUp()
-    doResolutionTest(wo, grid_info, hdf_filename,
-                     loclevel=10.0, decimation=(5, 5, 3))
+    #doResolutionTest(wo, grid_info, hdf_filename,
+                     #loclevel=3.0, decimation=(1, 1, 1))
     plotResolutionTest(wo, hdf_filename, plot_filename)

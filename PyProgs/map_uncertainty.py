@@ -7,7 +7,7 @@ import matplotlib.gridspec as gridspec
 def mapping_xyz():
 
   from NllGridLib import read_stations_file
-  stations = read_stations_file('/home/nadege/waveloc/lib/coord_stations_ijen_utm')
+  stations = read_stations_file('../lib/coord_stations_ijen_utm')
 
   nx,ny,nz = 41,41,11
   dx,dy,dz = 0.5,0.5,0.5
@@ -20,8 +20,8 @@ def mapping_xyz():
   ysta = np.array([np.argmin(np.abs(stations[key]['y']-y)) for key in sorted(stations)])
   zsta = np.array([np.argmin(np.abs(-stations[key]['elev']-z)) for key in sorted(stations)])
 
-  f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/unc_err_smooth.hdf5','r')
-  #f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/uncertainty_ok.hdf5','r')
+  f = h5py.File('../out/TEST_Dirac/unc_err_smooth.hdf5','r')
+  #f = h5py.File('../out/TEST_Dirac/uncertainty_ok.hdf5','r')
   unc_grid_x = f['unc_grid_x']
   unc_grid_y = f['unc_grid_y']
   unc_grid_z = f['unc_grid_z']
@@ -36,7 +36,7 @@ def mapping_xyz():
   print argsort[-80:]
   print np.array(unc_grid_x)[argsort[-80:]]
 
-  #f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/erreur.hdf5','r')
+  #f = h5py.File('../out/TEST_Dirac/erreur.hdf5','r')
   #unc_grid_x = f['err_grid_x']
   #unc_grid_y = f['err_grid_y']
   #unc_grid_z = f['err_grid_z']
@@ -168,7 +168,7 @@ def mapping_xyz():
   ax.set_yticklabels(zlab)
   ax.set_title('Uncertainty on z')
 
-  plt.savefig('/home/nadege/Desktop/unc_smooth_40.png')
+  #plt.savefig('/home/nadege/Desktop/unc_smooth_40.png')
 
 
 #  fig = plt.figure()
@@ -192,7 +192,7 @@ def mapping_xyz():
 def mapping_error():
 
   from NllGridLib import read_stations_file
-  stations = read_stations_file('/home/nadege/waveloc/lib/coord_stations_ijen_utm')
+  stations = read_stations_file('../lib/coord_stations_ijen_utm')
 
   nx,ny,nz = 41,41,11
   dx,dy,dz = 0.5,0.5,0.5
@@ -205,7 +205,7 @@ def mapping_error():
   ysta = np.array([np.argmin(np.abs(stations[key]['y']-y)) for key in sorted(stations)])
   zsta = np.array([np.argmin(np.abs(-stations[key]['elev']-z)) for key in sorted(stations)])
 
-  f = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/unc_err_smooth.hdf5','r')
+  f = h5py.File('../out/TEST_Dirac/20062014.hdf5','r')
   err_grid_x = f['err_grid_x']
   err_grid_y = f['err_grid_y']
   err_grid_z = f['err_grid_z']
@@ -215,7 +215,7 @@ def mapping_error():
 
   iz = 6
   cut_xy = grid_3D[:,:,iz]
-  vmin, vmax = 0, 2.5
+  vmin, vmax = 0, 1
   xlab = np.array(np.append([0],x[0::10]),dtype=int)
   ylab = np.array(np.append(y[0::10],[0]),dtype=int)
   extent = (0,np.size(cut_xy,0),0,np.size(cut_xy,1))
@@ -236,10 +236,27 @@ def mapping_error():
   fig.text(pos[0]-0.08,pos[1]+pos[3], 'z=%.1f km'%-z[iz], fontsize=12)
   cbar = fig.colorbar(cax,ticks=[vmin,(vmin+vmax)/2.,vmax])
   cbar.ax.set_yticklabels([vmin,(vmin+vmax)/2.,'> %.1f'%vmax])
-  plt.savefig('/home/nadege/Desktop/Ijen_smooth_error_z%.1fkm.png'%-z[iz])
+  #plt.savefig('/home/nadege/Desktop/Ijen_smooth_error_z%.1fkm.png'%-z[iz])
   plt.show()
 
 
+def compare_hdf5_files():
+
+  file_1 = '../out/EXAMPLE_Dirac/grid/Ijen_waveloc_resolution.hdf5'
+  file_2 = '../out/TEST_Dirac/20062014.hdf5'
+
+  f1 = h5py.File(file_1,'r')
+  err_1 = f1['dist_grid'][:]
+  f2 = h5py.File(file_2,'r')
+  err_2 = np.sqrt(f2['err_grid_x'][:]**2 + f2['err_grid_y'][:]**2 + f2['err_grid_z'][:]**2)
+
+  for i in range(err_1.shape[0]):
+    if err_1[i] != err_2[i]:
+      print i, err_1[i], err_2[i], f2['err_grid_x'][:][i], f2['err_grid_y'][:][i], f2['err_grid_z'][:][i]
+      raw_input('pause')
+
+
 if __name__ == '__main__':
-   mapping_xyz()
-   #mapping_error()
+  #mapping_xyz()
+  #mapping_error()
+  compare_hdf5_files() 

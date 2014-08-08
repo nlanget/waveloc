@@ -64,11 +64,12 @@ class SyntheticMigrationTests(unittest.TestCase):
     plot = False
     save = True
     if save:
-      f_unc = h5py.File('/home/nadege/waveloc/out/TEST_Dirac/unc_err_smooth.hdf5','w')
+      f_unc = h5py.File('../out/%s/20062014.hdf5'%wo.opdict['outdir'],'w')
       unc_grid_x = f_unc.create_dataset('unc_grid_x',(nbuf,))
       unc_grid_y = f_unc.create_dataset('unc_grid_y',(nbuf,))
       unc_grid_z = f_unc.create_dataset('unc_grid_z',(nbuf,))
 
+      err_grid = f_unc.create_dataset('err_grid',(nbuf,))
       err_grid_x = f_unc.create_dataset('err_grid_x',(nbuf,))
       err_grid_y = f_unc.create_dataset('err_grid_y',(nbuf,))
       err_grid_z = f_unc.create_dataset('err_grid_z',(nbuf,))
@@ -78,7 +79,10 @@ class SyntheticMigrationTests(unittest.TestCase):
       #list_ibb = [382,404,1316,1767,2207,2658,3098,4890,5307,5803,5867,5868,5924,6376,7225,7276,7288,7673,7674,7675,7684,7685,7696,7728,7729,7739,7740,7741,7751,8123,8124,8125,8126,8127,8134,8145,8146,8147,8149,8157,8168,8212,8573,8574,8575,8576,8577,8578,8585,8587,8608,8618,8619,9024,9025,9026,9027,9028,9029,9030,9037,9047,9048,9476,9477,9480,9481,9488,9489,9490,9491,9498,9499,9521,9532,9544,9554,9928,9929,9930,9931,9932,9934,9938,9940,9941,9952,9972,9973,9983,10005,10379,10380,10381,10382,10383,10385,10386,10403,10411,10412,10423,10424,10829,10830,10831,10832,10837,10851,10852,10862,10875,10885,11282,11283,11297,11304,11557,11732,11733,11734,11743,11755,11776,11777,11997,12183,12184,12195,12205,12635,12765,12904,18172]
 
       # maximum uncertainty values
-      list_ibb = [1794 ,9716,11681,12234,10178,12683,16462,13167,11738,16809,18240,12091,10306,18304,13258,15845,16381,9933,9727,16830,13123,16340,9264,12004,15070,15346,11609,12544,11793,17327,17732,13553,18260,12858,18250,17359,10168,9717,12190,9255,10619,16436,15556,10835,17326,12287,14643,16477,10640,10639,17336,15961,11091,12255,16866,18305,12531,12543,13652,17788,12688,17270,15895,16775,12247,12475,17778,6182,10179,16380,18249,15951,15564,18239,10630,12188,15488,11726,12476,11147]
+      #list_ibb = [1794 ,9716,11681,12234,10178,12683,16462,13167,11738,16809,18240,12091,10306,18304,13258,15845,16381,9933,9727,16830,13123,16340,9264,12004,15070,15346,11609,12544,11793,17327,17732,13553,18260,12858,18250,17359,10168,9717,12190,9255,10619,16436,15556,10835,17326,12287,14643,16477,10640,10639,17336,15961,11091,12255,16866,18305,12531,12543,13652,17788,12688,17270,15895,16775,12247,12475,17778,6182,10179,16380,18249,15951,15564,18239,10630,12188,15488,11726,12476,11147]
+
+      # big differences in the error computation
+      list_ibb = [9069,9070,9071,9072,9078,9079]
 
     for ixx in range(0,nbx):
       for iyy in range(0,nby):
@@ -138,31 +142,35 @@ class SyntheticMigrationTests(unittest.TestCase):
 
           locs = trigger_locations_inner(max_val_smoothed,max_x,max_y,max_z,loclevel,loclevel,stack_start_time,dt)
 
-          x_found = round(locs[0]['x_mean'],1)
-          y_found = round(locs[0]['y_mean'],1)
-          z_found = round(locs[0]['z_mean'],1)
+          print "LEN LOCS",len(locs)
+          if len(locs) > 0:
+            imax = np.argmax([loc['max_trig'] for loc in locs])
+
+          x_found = round(locs[imax]['x_mean'],1)
+          y_found = round(locs[imax]['y_mean'],1)
+          z_found = round(locs[imax]['z_mean'],1)
           if plot:
-            print wo.opdict['syn_otime'],locs[0]['o_time']
+            print wo.opdict['syn_otime'],locs[imax]['o_time']
             print np.array(wo.opdict['syn_ix'])*dx+x_orig,x_found
             print np.array(wo.opdict['syn_iy'])*dy+y_orig,y_found
             print np.array(wo.opdict['syn_iz'])*dz+z_orig,z_found
-            print "UNCERTAINTIES :",locs[0]['x_sigma'],locs[0]['y_sigma'],locs[0]['z_sigma']
+            print "UNCERTAINTIES :",locs[imax]['x_sigma'],locs[imax]['y_sigma'],locs[imax]['z_sigma']
 
-          test_info['o_time'] = locs[0]['o_time']
-          test_info['x_err'] = (locs[0]['x_mean']-locs[0]['x_sigma'],locs[0]['x_mean']+locs[0]['x_sigma'])
-          test_info['y_err'] = (locs[0]['y_mean']-locs[0]['y_sigma'],locs[0]['y_mean']+locs[0]['y_sigma'])
-          test_info['z_err'] = (locs[0]['z_mean']-locs[0]['z_sigma'],locs[0]['z_mean']+locs[0]['z_sigma'])
-          test_info['t_err'] = (locs[0]['o_time']-locs[0]['o_err_left'],locs[0]['o_time']+locs[0]['o_err_right'])
-          #test_info['t_err'] = (locs[0]['o_time']-locs[0]['o_err_left']-stack_start_time,locs[0]['o_time']+locs[0]['o_err_right']-stack_start_time)
+          test_info['o_time'] = locs[imax]['o_time']
+          test_info['x_err'] = (locs[imax]['x_mean']-locs[imax]['x_sigma'],locs[imax]['x_mean']+locs[imax]['x_sigma'])
+          test_info['y_err'] = (locs[imax]['y_mean']-locs[imax]['y_sigma'],locs[imax]['y_mean']+locs[imax]['y_sigma'])
+          test_info['z_err'] = (locs[imax]['z_mean']-locs[imax]['z_sigma'],locs[imax]['z_mean']+locs[imax]['z_sigma'])
+          test_info['t_err'] = (locs[imax]['o_time']-locs[imax]['o_err_left'],locs[imax]['o_time']+locs[imax]['o_err_right'])
 
-          ex = locs[0]['x_mean']-(wo.opdict['syn_ix'][0]*dx+x_orig)
-          ey = locs[0]['y_mean']-(wo.opdict['syn_iy'][0]*dy+y_orig)
-          ez = locs[0]['z_mean']-(wo.opdict['syn_iz'][0]*dz+z_orig)
+          ex = locs[imax]['x_mean']-(wo.opdict['syn_ix'][0]*dx+x_orig)
+          ey = locs[imax]['y_mean']-(wo.opdict['syn_iy'][0]*dy+y_orig)
+          ez = locs[imax]['z_mean']-(wo.opdict['syn_iz'][0]*dz+z_orig)
+          erreur = np.sqrt(ex**2+ey**2+ez**2)
+
+          plot = False 
           if plot:
-            print "\nERREUR"
-            print np.sqrt(ex**2+ey**2+ez**2)
+            print "\nERREUR :",np.sqrt(ex**2+ey**2+ez**2), "ex, ey, ez :", np.abs(ex), np.abs(ey), np.abs(ez)
 
-          plot = False
           if plot:
 
             # The first figure shows the stacking values for the true origin time.
@@ -176,13 +184,12 @@ class SyntheticMigrationTests(unittest.TestCase):
             iz_found = int(round((z_found-z_orig)*1./dz))
 
             from plot_mpl import plotDiracTest
-            print test_info['true_indexes']
-            print test_info
-            plotDiracTest(test_info,'/home/nadege/waveloc/out/TEST_Dirac/fig',2,ixx,iyy,izz,ix_found,iy_found,iz_found)
+            print "True indexes",test_info['true_indexes']
+            plotDiracTest(test_info,'../out/%s/fig'%wo.opdict['outdir'],2,p1x=ixx,p1y=iyy,p1z=izz,p2x=ix_found,p2y=iy_found,p2z=iz_found)
 
             test_info['true_indexes'] = (ix_found, iy_found, iz_found, it_found)
-            print test_info['true_indexes']
-            plotDiracTest(test_info,'/home/nadege/waveloc/out/TEST_Dirac/fig',2,ixx,iyy,izz,ix_found,iy_found,iz_found)
+            print "Waveloc indexes",test_info['true_indexes']
+            plotDiracTest(test_info,'../out/%s/fig'%wo.opdict['outdir'],2,p1x=ixx,p1y=iyy,p1z=izz,p2x=ix_found,p2y=iy_found,p2z=iz_found)
 
             wix = np.argmin(np.abs(np.array(wo.opdict['syn_ix'])*dx+x_orig - np.arange(x_orig,x_orig+nx*dx,dx)))
             wiy = np.argmin(np.abs(np.array(wo.opdict['syn_iy'])*dy+y_orig - np.arange(y_orig,y_orig+ny*dy,dy)))
@@ -225,7 +232,7 @@ class SyntheticMigrationTests(unittest.TestCase):
             ax = fig.add_subplot(n_traces,2,2*(iii+1)+2)
             ax.set_axis_off()
             t = np.arange(0,len(max_val[ind:])*delta_t,delta_t)
-            ax.plot(max_val,'k')
+            ax.plot(max_val_smoothed,'k')
             #if len(t) == len(max_val[ind:]):
             #  ax.plot(t,max_val[ind:],'k')
             #else:
@@ -233,12 +240,13 @@ class SyntheticMigrationTests(unittest.TestCase):
             plt.show()
 
           if save:
+            f_unc['err_grid'][ibb] = erreur
             f_unc['err_grid_x'][ibb] = np.abs(ex)
             f_unc['err_grid_y'][ibb] = np.abs(ey)
             f_unc['err_grid_z'][ibb] = np.abs(ez)
-            f_unc['unc_grid_x'][ibb] = locs[0]['x_sigma']
-            f_unc['unc_grid_y'][ibb] = locs[0]['y_sigma']
-            f_unc['unc_grid_z'][ibb] = locs[0]['z_sigma']
+            f_unc['unc_grid_x'][ibb] = locs[imax]['x_sigma']
+            f_unc['unc_grid_y'][ibb] = locs[imax]['y_sigma']
+            f_unc['unc_grid_z'][ibb] = locs[imax]['z_sigma']
 
           f_stack.close()
 

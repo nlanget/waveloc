@@ -146,9 +146,9 @@ def migration_and_location(opdict):
     print "\nEVENT NUMBER %d - %d"%(idate,date)
 
     data = {}
-    data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
-    kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
-    grad_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['gradglob'])))
+    data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
+    kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
+    grad_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s'%(str(date)[:8],str(date)[8:],opdict['gradglob'])))
     data_files.sort()
     kurt_files.sort()
     grad_files.sort()
@@ -280,7 +280,7 @@ def plot_locations(opdict):
   from migration import migrate_4D_stack, extract_max_values
   from locations_trigger import read_locs_from_file
   import matplotlib.pyplot as plt
-  from plot_mpl import plotLocationGrid, plotDiracTest
+  from plot_mpl import plotLocationGrid, plotDiracTest, plotLocationWaveforms
 
   base_path = opdict['base_path']
   data_dir = os.path.join(base_path,'data',opdict['datadir'])
@@ -317,7 +317,7 @@ def plot_locations(opdict):
     date_list.append(d)
     d_utc.append(utcdatetime.UTCDateTime(d))
 
-  loc_file = os.path.join(locdir,'locations_notfull.dat')
+  loc_file = os.path.join(locdir,'locations.dat')
   locs = read_locs_from_file(loc_file)
 
   for iloc,loc in enumerate(locs):
@@ -330,16 +330,17 @@ def plot_locations(opdict):
 
     print "LOCATION NUMBER %d - %s - %s"%(iloc,date,loc['o_time'])
 
-    data = {}
-    data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
-    kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
-    grad_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s*'%(str(date)[:8],str(date)[8:],opdict['gradglob'])))
+    data_dict = {}
+    grad_dict = {}
+    data_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s'%(str(date)[:8],str(date)[8:],opdict['dataglob'])))
+    kurt_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s'%(str(date)[:8],str(date)[8:],opdict['kurtglob'])))
+    grad_files = glob.glob(os.path.join(data_dir,'*%s_%s*%s'%(str(date)[:8],str(date)[8:],opdict['gradglob'])))
     data_files.sort()
     kurt_files.sort()
     grad_files.sort()
     filename = '%s_%s.hdf5'%(opdict['outdir'],date)
     grid_file = os.path.join(outdir,'grid',filename)
-    for file in grad_files:
+    for file in data_files:
       wf = Waveform()              
       wf.read_from_file(file)
       station = wf.station
@@ -349,13 +350,17 @@ def plot_locations(opdict):
         station = 'DAM'
       if wf.station == 'A2184':
         station = 'POS'
-      data[station] = wf.values
+      data_dict[station] = wf.values
       start_time = wf.starttime
+
+      wf = Waveform()
+      wf.read_from_file(os.path.join(data_dir,'%s_GRAD'%os.path.basename(file)))
+      grad_dict[station] = wf.values
 
     logging.info('Doing migration to %s'%grid_file)
     f = h5py.File(grid_file,'w')
     stack_grid = f.create_dataset('stack_grid',(n_buf,npts),'f',chunks=(1,npts))
-    stack_shift_time = migrate_4D_stack(data,delta,time_grids,stack_grid)
+    stack_shift_time = migrate_4D_stack(grad_dict,delta,time_grids,stack_grid)
     stack_start_time = start_time - stack_shift_time
     n_buf,nt = stack_grid.shape
 
@@ -364,6 +369,8 @@ def plot_locations(opdict):
       stack_grid.attrs[key] = value
     stack_grid.attrs['dt'] = delta
     stack_grid.attrs['start_time'] = stack_start_time.isoformat()
+
+    print start_time, stack_start_time
 
     # extract max-stack
     f_stack = h5py.File(stack_file,'r')
@@ -387,6 +394,7 @@ def plot_locations(opdict):
     info['start_time'] = stack_start_time
 
     figdir = os.path.join(outdir,'fig')
+    plotLocationWaveforms(loc,start_time,delta,data_dict,grad_dict,max_val_smoothed,figdir)
     plotLocationGrid(loc,info,figdir,2.)
     plt.show()
 

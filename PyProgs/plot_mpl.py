@@ -22,6 +22,7 @@ def plotLocationWaveforms(loc,start_time,dt,data_dict,grad_dict,stack_wfm,fig_di
     plot_filename=os.path.join(fig_dir,'loc_%s.pdf'%(otime.isoformat()))
 
     t=np.arange(len(stack_wfm))*dt - (otime - start_time)
+    lt = len(t)
 
     stations=data_dict.keys()
     stations.sort()
@@ -39,7 +40,8 @@ def plotLocationWaveforms(loc,start_time,dt,data_dict,grad_dict,stack_wfm,fig_di
         # plot the data in the first column
         ax=fig.add_subplot(n_traces,2,2*i+1)
         ax.set_axis_off()
-        ax.plot(t,data_dict[sta],'b')
+        ldd = len(data_dict[sta])
+        ax.plot(t,data_dict[sta][ldd-lt:],'b')
         ax.axvspan(otime_left,otime_right,facecolor='r', alpha=0.2)
         # add the station name
         pos=list(ax.get_position().bounds)
@@ -49,7 +51,8 @@ def plotLocationWaveforms(loc,start_time,dt,data_dict,grad_dict,stack_wfm,fig_di
         # plot the kurtosis gradient in the second column
         ax=fig.add_subplot(n_traces,2,2*i+2)
         ax.set_axis_off()
-        ax.plot(t,grad_dict[sta],'b')
+        lgd = len(grad_dict[sta])
+        ax.plot(t,grad_dict[sta][lgd-lt:],'b')
         ax.axvspan(otime_left,otime_right,facecolor='r', alpha=0.2)
         # add the maximum kurtosis value 
         pos=list(ax.get_position().bounds)
@@ -143,7 +146,7 @@ def plotLocationGrid(loc,grid_info,fig_dir,otime_window):
   plotDiracTest(plot_info,fig_dir,otime_window)
 
 
-def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
+def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p2z=0):
 
   # set up plot using info from test_info
   nx,ny,nz,nt = test_info['grid_shape']
@@ -151,7 +154,7 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
   x_orig,y_orig,z_orig = test_info['grid_orig']
   ix_true, iy_true, iz_true, it_true = test_info['true_indexes']
   if test_info.has_key('true_values'): 
-      x_true, y_true, z_true, t_true= test_info['true_values']  
+      x_true, y_true, z_true, t_true = test_info['true_values']  
   stack_start_time=test_info['start_time']
   grid_filename=test_info['dat_file']
   stack_filename=test_info['stack_file']
@@ -206,9 +209,10 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
   fig=plt.figure()
   fig.set_facecolor('white')
 
-  x1=aa*dx;x2=dd*dx;
-  y1=bb*dy;y2=ee*dy;
-  z1=z_orig+cc*dz;z2=z_orig+ff*dz;
+  if p1x and p1y and p1z: 
+    x1=aa*dx;y1=bb*dy;z1=z_orig+cc*dz
+  if p2x and p2y and p2z:
+    x2=dd*dx;y2=ee*dy;z2=z_orig+ff*dz
 
   if test_info.has_key('true_values') and test_info.has_key('o_time'): 
     fig.suptitle('%s   x = %.2fkm  y = %.2fkm  z = %.2fkm'%(test_info['o_time'].isoformat(), x_true, y_true, z_true))
@@ -218,8 +222,10 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
     p=plt.subplot(2,2,1)
     pos=list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(a)', fontsize=12)
-    plt.plot(x1,y1,'y*',markersize=10)
-    plt.plot(x2,y2,'r*',markersize=10)
+    if p1x and p1y:
+      plt.plot(x1,y1,'y*',markersize=10)
+    if p2x and p2y:
+      plt.plot(x2,y2,'r*',markersize=10)
     plt.imshow(xy_cut.T,origin='lower',interpolation='none',extent=[np.min(x),np.max(x),np.min(y),np.max(y)],cmap=cmap)
    # if test_info.has_key('x_err'):
    #     x_low,x_high=test_info['x_err']
@@ -236,8 +242,10 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
     p=plt.subplot(4,2,5)
     pos=list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(d)', fontsize=12)
-    plt.plot(x1,-z1,'y*',markersize=10)
-    plt.plot(x2,-z2,'r*',markersize=10)
+    if p1x and p1z:
+      plt.plot(x1,-z1,'y*',markersize=10)
+    if p2x and p2z:
+      plt.plot(x2,-z2,'r*',markersize=10)
     plt.imshow(xz_cut.T,origin='upper',interpolation='none',extent=[np.min(x),np.max(x),np.min(z),np.max(z)],cmap=cmap)
     p.tick_params(labelsize=10)
     p.xaxis.set_ticks_position('top')
@@ -251,8 +259,10 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
     p=plt.subplot(4,2,7)
     pos=list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(f)', fontsize=12)
-    plt.plot(y1,-z1,'y*',markersize=10)
-    plt.plot(y2,-z2,'r*',markersize=10)
+    if p1y and p1z:
+      plt.plot(y1,-z1,'y*',markersize=10)
+    if p2y and p2z:
+      plt.plot(y2,-z2,'r*',markersize=10)
     plt.imshow(yz_cut.T,origin='upper',interpolation='none',extent=[np.min(y),np.max(y),np.min(z),np.max(z)],cmap=cmap)
     p.xaxis.set_ticks_position('bottom')
     p.tick_params(labelsize=10)
@@ -269,6 +279,8 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
     rlim = t[it_true]+otime_window
 
   illim = int((llim-t[0])/dt)
+  if illim < 0:
+    illim = 0
   irlim = int((rlim-t[0])/dt)
 
   # plot max value
@@ -296,7 +308,6 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa,bb,cc,dd,ee,ff):
   x=np.arange(nx)*dx+x_orig
   y=np.arange(ny)*dy+y_orig
   z=np.arange(nz)*dz+z_orig
-  print x[ix_true],y[iy_true],z[iz_true]
 
   # plot max x
   if dx > 0 :
