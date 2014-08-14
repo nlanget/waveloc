@@ -257,6 +257,6 @@ def compare_hdf5_files():
 
 
 if __name__ == '__main__':
-  #mapping_xyz()
-  #mapping_error()
-  compare_hdf5_files() 
+  mapping_xyz()
+  mapping_error()
+  #compare_hdf5_files() 
