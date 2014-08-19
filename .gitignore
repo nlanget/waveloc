@@ -25,3 +25,8 @@ MANIFEST
 /build/
 /dist/
 _build
+*.csv
+*.dataless
+*.mat
+/PyProgs/plot
+/PyProgs/test_data
