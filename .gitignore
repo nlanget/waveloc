@@ -26,5 +26,6 @@ MANIFEST
 /build/
 /dist/
 _build
-/lib/*.dataless
-/lib/*.csv
+*.dataless
+*.csv
+*.png
