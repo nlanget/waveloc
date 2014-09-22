@@ -13,7 +13,7 @@ def generateSyntheticDirac(opdict,time_grids=None):
     if time_grids==None : load_time_grids = True
 
     #define length and sampling frequency of synthetic data
-    #s_amplitude   = opdict['syn_amplitude']
+    s_amplitude   = opdict['syn_amplitude']
     s_data_length = opdict['syn_datalength']
     s_sample_freq = opdict['syn_samplefreq']
     s_filename    = opdict['syn_filename']
@@ -41,36 +41,36 @@ def generateSyntheticDirac(opdict,time_grids=None):
     if opdict.has_key('sta_list') :
         sta_list=opdict['sta_list'].split(',')
     else:
-        sta_list=stations.keys()
+        sta_list = stations.keys()
 
     # get parameters for noise etc
-    syn_addnoise=opdict['syn_addnoise']
+    syn_addnoise = opdict['syn_addnoise']
 
     #################################
     # start setting up synthetic data
     #################################
 
-    grid_info=read_hdr_file(search_grid_filename)
+    grid_info = read_hdr_file(search_grid_filename)
 
     if load_time_grids:
-      time_grids=get_interpolated_time_grids(opdict)
+      time_grids = get_interpolated_time_grids(opdict)
 
     #################################
     # create synthetic data
     #################################
 
     # choose hypocenter
-    nx=grid_info['nx']
-    ny=grid_info['ny']
-    nz=grid_info['nz']
+    nx = grid_info['nx']
+    ny = grid_info['ny']
+    nz = grid_info['nz']
 
-    dx=grid_info['dx']
-    dy=grid_info['dy']
-    dz=grid_info['dz']
+    dx = grid_info['dx']
+    dy = grid_info['dy']
+    dz = grid_info['dz']
 
-    x_orig=grid_info['x_orig']
-    y_orig=grid_info['y_orig']
-    z_orig=grid_info['z_orig']
+    x_orig = grid_info['x_orig']
+    y_orig = grid_info['y_orig']
+    z_orig = grid_info['z_orig']
 
     ttimes={}
     data={}
@@ -115,6 +115,7 @@ def generateSyntheticDirac(opdict,time_grids=None):
           logging.error('syn_datalength is too small compared with geographical size of network ')
         s[i_atime:i_atime+s_nkwidth] = s[i_atime:i_atime+s_nkwidth]+s_amplitude-np.arange(s_nkwidth)*(s_amplitude/float(s_nkwidth))
         data[key] = s
+
 
     # DO MIGRATION
 
