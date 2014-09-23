@@ -63,7 +63,7 @@ def doPointTest(wo, loclevel=10.0):
 
     # do the migration
     test_info = generateSyntheticDirac(wo.opdict)
-    logging.info(test_info)
+    #logging.info(test_info)
 
     # retrieve output info
     stack_filename = test_info['stack_file']
@@ -128,8 +128,10 @@ def analyseLocs(locs, wo, test_info):
         loc_dt = None
 
     if n_locs > 1:
+      iloc = 1
       for loc in locs:
-        plotSyntheticResult(wo,test_info,loc)
+        plotSyntheticResult(wo,test_info,loc,iloc)
+        iloc = iloc + 1
       plt.show()
 
 
@@ -190,7 +192,9 @@ def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
 
         # do analysis for this point
         n_locs, best_dist, best_dt, trig_loc = analyseLocs(locs, wo, test_info)
-        print ix, iy, iz, n_locs, best_dist, best_dt
+        print "Point : (%d, %d, %d)\n# locs : %d"%(ix, iy, iz, n_locs)
+        print "best_dist : ", best_dist, "km"
+        print "best_dt : ", best_dt, "s"
 
         # save into array
         dist_grid[ib_dec] = best_dist
@@ -213,12 +217,13 @@ def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
     return resgrid_filename
 
 
-def plotSyntheticResult(wo,test_info,loc):
+def plotSyntheticResult(wo,test_info,loc,iloc):
 
     # The first figure shows the stacking values for the true origin time.
     # The second figure shows the stacking values for the recovered origin time.
     # The third plot shows the kurtosis traces alignment.
-    # yellow star = true location ; red star = Waveloc's location
+    # yellow star = true location (ixx, iyy, izz) ; 
+    # red star = Waveloc's location (ix_found, iy_found, iz_found)
 
     import matplotlib.pyplot as plt
 
@@ -234,9 +239,11 @@ def plotSyntheticResult(wo,test_info,loc):
     else:
       max_val = f_stack['max_val']
       max_val = f_stack['max_val']
+    np_max_val = max_val[:]
+    f_stack.close()
 
     ixx = wo.opdict['syn_ix'][0]
-    yy = wo.opdict['syn_iy'][0]
+    iyy = wo.opdict['syn_iy'][0]
     izz = wo.opdict['syn_iz'][0]
 
     # Waveloc location
@@ -248,14 +255,16 @@ def plotSyntheticResult(wo,test_info,loc):
     from plot_mpl import plotDiracTest
     print "True location", test_info['true_indexes']
     fig_name = os.path.join(wo.opdict['base_path'], 'out',wo.opdict['outdir'],'fig')
-    wo.opdict['syn_filename'] = 'loc1_x%d_y%d_z%d'%(ixx,iyy,izz)
-    plotDiracTest(test_info,fig_name,2,ixx,iyy,izz,ix_found,iy_found,iz_found)
+    wo.opdict['syn_filename'] = 'loc%d_x%d_y%d_z%d_true'%(iloc,ixx,iyy,izz)
+    plotDiracTest(test_info,fig_name,2,aa=ixx,bb=iyy,cc=izz,dd=ix_found,ee=iy_found,ff=iz_found)
+    plt.savefig('../out/%s/fig/%s.pdf'%(wo.opdict['outdir'],wo.opdict['syn_filename']))
 
     test_info['true_indexes'] = (ix_found, iy_found, iz_found, it_found)
     print "Waveloc location",test_info['true_indexes']
     fig_name = os.path.join(wo.opdict['base_path'], 'out',wo.opdict['outdir'],'fig')
-    wo.opdict['syn_filename'] = 'loc2_x%d_y%d_z%d'%(ixx,iyy,izz)
-    plotDiracTest(test_info,fig_name,2,ixx,iyy,izz,ix_found,iy_found,iz_found)
+    wo.opdict['syn_filename'] = 'loc%d_x%d_y%d_z%d_wl'%(iloc,ixx,iyy,izz)
+    plotDiracTest(test_info,fig_name,2,aa=ixx,bb=iyy,cc=izz,dd=ix_found,ee=iy_found,ff=iz_found)
+    plt.savefig('../out/%s/fig/%s.pdf'%(wo.opdict['outdir'],wo.opdict['syn_filename']))
 
     # True location
     wix = np.argmin(np.abs(np.array(wo.opdict['syn_ix'])*dx+x_orig - np.arange(x_orig,x_orig+nx*dx,dx)))
@@ -281,7 +290,6 @@ def plotSyntheticResult(wo,test_info,loc):
       else:
         logging.info('Missing travel-time information for station %s. Ignoring station...'%sta)
 
-
     fig = plt.figure(figsize=(12,8))
     fig.set_facecolor('white')
     n_traces = len(ttimes_true) + 2
@@ -295,38 +303,38 @@ def plotSyntheticResult(wo,test_info,loc):
       ax.text(0.2,0.5,key)
 
       ind = np.argmin(np.abs(t-ttimes_true[key]))
-      t = np.arange(0,len(test_info['data'][key][ind:ind+len(max_val[:])])*delta_t,delta_t)
+      lmv = len(np_max_val)
+      t = np.arange(0,len(test_info['data'][key][ind:ind+lmv])*delta_t,delta_t)
       ax = fig.add_subplot(n_traces,3,3*iii+2)
       ax.set_axis_off()
-      if len(t) == len(test_info['data'][key][ind:ind+len(max_val[:])]):
-        ax.plot(t,test_info['data'][key][ind:ind+len(max_val[:])],'k')
+      if len(t) == len(test_info['data'][key][ind:ind+lmv]):
+        ax.plot(t,test_info['data'][key][ind:ind+lmv],'k')
       else:
-        ax.plot(t[:-1],test_info['data'][key][ind:ind+len(max_val[:])],'k')
+        ax.plot(t[:-1],test_info['data'][key][ind:ind+lmv],'k')
 
       ind = np.argmin(np.abs(t-ttimes_wl[key]))
-      t = np.arange(0,len(test_info['data'][key][ind:ind+len(max_val[:])])*delta_t,delta_t)
+      t = np.arange(0,len(test_info['data'][key][ind:ind+lmv])*delta_t,delta_t)
       ax = fig.add_subplot(n_traces,3,3*iii+3)
       ax.set_axis_off()
-      if len(t) == len(test_info['data'][key][ind:ind+len(max_val[:])]):
-        ax.plot(t,test_info['data'][key][ind:ind+len(max_val[:])],'k')
+      if len(t) == len(test_info['data'][key][ind:ind+lmv]):
+        ax.plot(t,test_info['data'][key][ind:ind+lmv],'k')
       else:
-        ax.plot(t[:-1],test_info['data'][key][ind:ind+len(max_val[:])],'k')
+        ax.plot(t[:-1],test_info['data'][key][ind:ind+lmv],'k')
 
-      t = np.arange(0,len(max_val[:])*delta_t,delta_t)
-      ind = np.argmin(np.abs(t-loc['o_time']))
-      ax = fig.add_subplot(n_traces,3,3*(iii+1)+2)
-      ax.set_axis_off()
-      t = np.arange(0,len(max_val[ind:])*delta_t,delta_t)
-      ax.plot(max_val[:],'k')
+    t = np.arange(0,lmv*delta_t,delta_t)
+    ind = np.argmin(np.abs(t-loc['o_time']))
+    ax = fig.add_subplot(n_traces,3,3*(iii+1)+2)
+    ax.set_axis_off()
+    t = np.arange(0,len(np_max_val[ind:])*delta_t,delta_t)
+    ax.plot(np_max_val,'k')
 
-      ax = fig.add_subplot(n_traces,3,3*(iii+1)+3)
-      ax.set_axis_off()
-      ax.plot(max_val[:],'k')
+    ax = fig.add_subplot(n_traces,3,3*(iii+1)+3)
+    ax.set_axis_off()
+    ax.plot(np_max_val,'k')
 
-      plt.figtext(0.45,0.93,'True location')
-      plt.figtext(0.72,0.93,'Waveloc location')
-
-      f_stack.close()
+    plt.figtext(0.45,0.93,'True location')
+    plt.figtext(0.72,0.93,'Waveloc location')
+    plt.savefig('../out/%s/fig/mig_loc%d_x%d_y%d_z%d.pdf'%(wo.opdict['outdir'],iloc,ixx,iyy,izz))
 
 
 def plotResolutionTest(wo, hdf_filename, plot_filename):
@@ -450,9 +458,9 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
 
 if __name__ == '__main__':
 
-    hdf_filename = 'waveloc_resolution.hdf5'
-    plot_filename = 'waveloc_resolution.png'
+    hdf_filename = '2309_waveloc_resolution.hdf5'
+    plot_filename = '2309_waveloc_resolution.png'
 
     wo, grid_info = setUp()
-    #doResolutionTest(wo, grid_info, hdf_filename, loclevel=10.0, decimation=(5, 5, 3))
+    doResolutionTest(wo, grid_info, hdf_filename, loclevel=10.0, decimation=(5, 5, 3))
     plotResolutionTest(wo, hdf_filename, plot_filename)

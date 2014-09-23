@@ -206,7 +206,7 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None
   fig = plt.figure()
   fig.set_facecolor('white')
 
-  if aa:
+  if aa != None:
     x1=aa*dx;x2=dd*dx;
     y1=bb*dy;y2=ee*dy;
     z1=z_orig+cc*dz;z2=z_orig+ff*dz;
@@ -219,9 +219,10 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None
     p = plt.subplot(2,2,1)
     pos = list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(a)', fontsize=12)
-    if aa:
-      plt.plot(x1,y1,'y*',markersize=10)
-      plt.plot(x2,y2,'r*',markersize=10)
+    if aa != None:
+      plt.plot(x1,y1,'y*',markersize=10,label='true')
+      plt.plot(x2,y2,'r*',markersize=10,label='waveloc')
+      plt.legend(loc=1,numpoints=1,prop={'size':8})
     plt.imshow(xy_cut.T,origin='lower',interpolation='none',extent=[np.min(x),np.max(x),np.min(y),np.max(y)],cmap=cmap)
    # if test_info.has_key('x_err'):
    #     x_low,x_high=test_info['x_err']
@@ -238,7 +239,7 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None
     p = plt.subplot(4,2,5)
     pos = list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(d)', fontsize=12)
-    if aa:
+    if aa != None:
       plt.plot(x1,-z1,'y*',markersize=10)
       plt.plot(x2,-z2,'r*',markersize=10)
     plt.imshow(xz_cut.T,origin='upper',interpolation='none',extent=[np.min(x),np.max(x),np.min(z),np.max(z)],cmap=cmap)
@@ -254,7 +255,7 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None
     p = plt.subplot(4,2,7)
     pos = list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(f)', fontsize=12)
-    if aa:
+    if aa != None:
       plt.plot(y1,-z1,'y*',markersize=10)
       plt.plot(y2,-z2,'r*',markersize=10)
     plt.imshow(yz_cut.T,origin='upper',interpolation='none',extent=[np.min(y),np.max(y),np.min(z),np.max(z)],cmap=cmap)
@@ -403,7 +404,7 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None
   fig.text(pos[0]+pos[2]/2.,pos[1]+pos[3]+0.01, 'Stack max', fontsize=8, horizontalalignment='center', verticalalignment='bottom')
 
   #plt.tight_layout()
-  plt.savefig(fig_filename)
+  #plt.savefig(fig_filename)
   #plt.show()
 
   f.close()
