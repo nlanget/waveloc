@@ -265,6 +265,8 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
     vmax_nloc = np.max(nloc_grid)
     vmin_dt = np.min(dt_grid)
     vmax_dt = np.max(dt_grid)
+    vmin_dt = np.mean(np.abs(dt_grid)) - np.std(dt_grid)
+    vmax_dt = np.mean(np.abs(dt_grid)) + np.std(dt_grid)
 
     # filename
     (root, ext) = os.path.splitext(plot_filename)
@@ -297,6 +299,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         plt.colorbar(orientation='horizontal', ticks=range(0,np.ceil(vmax_dist),1))
         plt.scatter(sta_x, sta_y)
         plt.title('Distance (km)')
+        plt.figtext(.08,.87,'(a)')
 
         p = plt.subplot(1, 3, 2)
         plt.imshow(xy_cut_nloc.T, vmin=vmin_nloc, vmax=vmax_nloc,
@@ -308,6 +311,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         plt.colorbar(orientation='horizontal', ticks=range(1,vmax_nloc+1))
         plt.scatter(sta_x, sta_y)
         plt.title('No of locs')
+        plt.figtext(.37,.87,'(b)')
 
         p = plt.subplot(1, 3, 3)
         plt.imshow(xy_cut_dt.T, vmin=vmin_dt, vmax=vmax_dt,
@@ -316,11 +320,15 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=[-1,-.5,0,.5,1])
+        plt.colorbar(orientation='horizontal', ticks=[-0.03,0,0.03,0.06])
         plt.scatter(sta_x, sta_y)
         plt.title('Dt origin time (s)')
+        plt.figtext(.65,.87,'(c)')
 
+        plt.figtext(.12,.93,'z=%.2fkm'%(z_orig+iz*dz))
+        print "Saved figure in %s"%full_fname
         plt.savefig(full_fname)
+
 
 if __name__ == '__main__':
 
