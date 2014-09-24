@@ -90,38 +90,38 @@ def number_good_kurtosis_for_location(kurt_files,data_files,loc,time_dict,snr_li
 
 def trigger_locations_inner(max_val,max_x,max_y,max_z,left_trig,right_trig,start_time,delta):    
 
-    locs=[]
-    trigs=trigger.triggerOnset(np.array(max_val),left_trig,right_trig)
+    locs = []
+    trigs = trigger.triggerOnset(np.array(max_val),left_trig,right_trig)
 
-    df=1/delta
+    df = 1/delta
 
     logging.debug('Found %d triggers.'%len(trigs))
 
     for trig in trigs:
 
-      i_start=trig[0]
-      i_end=trig[1]+1
-      i_max_trig=np.argmax(max_val[i_start:i_end])+i_start
-      max_trig=max_val[i_max_trig]
-      max_trig_95=0.95*max_trig
+      i_start = trig[0]
+      i_end = trig[1]+1
+      i_max_trig = np.argmax(max_val[i_start:i_end])+i_start
+      max_trig = max_val[i_max_trig]
+      max_trig_95 = 0.95*max_trig
       logging.debug('Max_trig = %.3f, max_trig_95 = %.3f'%(max_trig,max_trig_95))
-      trigs_95=trigger.triggerOnset(max_val[i_start:i_end],max_trig_95,max_trig_95)
+      trigs_95 = trigger.triggerOnset(max_val[i_start:i_end],max_trig_95,max_trig_95)
       for trig_95 in trigs_95:
         if i_max_trig >= trig_95[0]+i_start and i_max_trig <= trig_95[1]+i_start:
-          loc_dict={}
-          loc_dict['max_trig']=max_trig
-          i_start_95=trig_95[0]+i_start
-          i_end_95=trig_95[1]+1+i_start
-          loc_dict['x_mean']=np.mean(max_x[i_start_95:i_end_95])
-          loc_dict['x_sigma']=np.std(max_x[i_start_95:i_end_95])
-          loc_dict['y_mean']=np.mean(max_y[i_start_95:i_end_95])
-          loc_dict['y_sigma']=np.std(max_y[i_start_95:i_end_95])
-          loc_dict['z_mean']=np.mean(max_z[i_start_95:i_end_95])
-          loc_dict['z_sigma']=np.std(max_z[i_start_95:i_end_95])
+          loc_dict = {}
+          loc_dict['max_trig'] = max_trig
+          i_start_95 = trig_95[0]+i_start
+          i_end_95 = trig_95[1]+1+i_start
+          loc_dict['x_mean'] = np.mean(max_x[i_start_95:i_end_95])
+          loc_dict['x_sigma'] = np.std(max_x[i_start_95:i_end_95])
+          loc_dict['y_mean'] = np.mean(max_y[i_start_95:i_end_95])
+          loc_dict['y_sigma'] = np.std(max_y[i_start_95:i_end_95])
+          loc_dict['z_mean'] = np.mean(max_z[i_start_95:i_end_95])
+          loc_dict['z_sigma'] = np.std(max_z[i_start_95:i_end_95])
 
-          loc_dict['o_time']=start_time + i_max_trig*delta
-          loc_dict['o_err_left']=(i_max_trig-i_start_95)*delta
-          loc_dict['o_err_right']=(i_end_95-i_max_trig)*delta
+          loc_dict['o_time'] = start_time + i_max_trig*delta
+          loc_dict['o_err_left'] = (i_max_trig-i_start_95)*delta
+          loc_dict['o_err_right'] = (i_end_95-i_max_trig)*delta
 
           #locs.append([max_trig,o_time,o_err_left, o_err_right,x_mean,x_sigma,y_mean,y_sigma,z_mean,z_sigma])
           locs.append(loc_dict)
@@ -205,13 +205,13 @@ def do_locations_trigger_setup_and_run(opdict):
     f_stack = h5py.File(fname,'r')
     max_val = f_stack['max_val']
     start_times.append(utcdatetime.UTCDateTime(max_val.attrs['start_time']))
-    end_times.append(  utcdatetime.UTCDateTime(max_val.attrs['start_time'])+dt*len(max_val))
+    end_times.append(utcdatetime.UTCDateTime(max_val.attrs['start_time'])+dt*len(max_val))
     f_stack.close()
 
   first_start_time = min(start_times)
   last_end_time = max(end_times)
 
-  nt_full=int((last_end_time-first_start_time)/dt)+1
+  nt_full = int((last_end_time-first_start_time)/dt)+1
 
 
   # create - assume all stacks are of the same length and will be concatenated end to end 
@@ -234,7 +234,7 @@ def do_locations_trigger_setup_and_run(opdict):
     # get time info for this stack
     nt = len(max_val)
     start_time = utcdatetime.UTCDateTime(max_val.attrs['start_time'])
-    ibegin=np.int((start_time-first_start_time)/dt)
+    ibegin = np.int((start_time-first_start_time)/dt)
 
     # copy data over into the right place
     cmax_val[ibegin:ibegin+nt] = max_val[:]
@@ -250,33 +250,33 @@ def do_locations_trigger_setup_and_run(opdict):
   cmax_val_smooth[:] = smooth(np.array(cmax_val),51)
 
   for name in f:
-    dset=f[name]
-    dset.attrs['dt']=dt
-    dset.attrs['start_time']=first_start_time.isoformat()
+    dset = f[name]
+    dset.attrs['dt'] = dt
+    dset.attrs['start_time'] = first_start_time.isoformat()
 
 
   # DO TRIGGERING AND LOCATION
   if opdict['auto_loclevel']:
-    loclevel=opdict['snr_loclevel']*np.median(cmax_val_smooth)
-    opdict['loclevel']=loclevel
+    loclevel = opdict['snr_loclevel']*np.median(cmax_val_smooth)
+    opdict['loclevel'] = loclevel
   else:
-    loclevel=opdict['loclevel']
-  left_trig=loclevel
-  right_trig=loclevel
+    loclevel = opdict['loclevel']
+  left_trig = loclevel
+  right_trig = loclevel
 
-  loc_list=trigger_locations_inner(cmax_val_smooth[:],cmax_x,cmax_y,cmax_z,left_trig,right_trig,first_start_time,dt)
+  loc_list = trigger_locations_inner(cmax_val_smooth[:],cmax_x,cmax_y,cmax_z,left_trig,right_trig,first_start_time,dt)
   logging.info('Found %d initial.'%(len(loc_list)))
 
   # close the stack file
   f.close()
 
-  loc_file=open(loc_filename,'w')
+  loc_file = open(loc_filename,'w')
   write_header_options(loc_file,opdict)
 
-  snr_limit=opdict['snr_limit']
-  snr_tr_limit=opdict['snr_tr_limit']
-  sn_time=opdict['sn_time']
-  n_kurt_min=opdict['n_kurt_min']
+  snr_limit = opdict['snr_limit']
+  snr_tr_limit = opdict['snr_tr_limit']
+  sn_time = opdict['sn_time']
+  n_kurt_min = opdict['n_kurt_min']
 
   n_ok=0
   locs=[]

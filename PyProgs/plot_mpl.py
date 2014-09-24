@@ -146,7 +146,7 @@ def plotLocationGrid(loc,grid_info,fig_dir,otime_window):
   plotDiracTest(plot_info,fig_dir,otime_window)
 
 
-def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p2z=0):
+def plotDiracTest(test_info,fig_dir,otime_window,p1x=None,p1y=None,p1z=None,p2x=None,p2y=None,p2z=None,loclevel=None):
 
   # set up plot using info from test_info
   nx,ny,nz,nt = test_info['grid_shape']
@@ -155,9 +155,9 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
   ix_true, iy_true, iz_true, it_true = test_info['true_indexes']
   if test_info.has_key('true_values'): 
       x_true, y_true, z_true, t_true = test_info['true_values']  
-  stack_start_time=test_info['start_time']
-  grid_filename=test_info['dat_file']
-  stack_filename=test_info['stack_file']
+  stack_start_time = test_info['start_time']
+  grid_filename = test_info['dat_file']
+  stack_filename = test_info['stack_file']
   fig_filename = os.path.join(fig_dir,"%s.pdf"%os.path.splitext(os.path.basename(grid_filename))[0])
 #  if test_info.has_key('o_time'):
 #    fig_filename = os.path.join(fig_dir,"grid_%s.pdf" % 
@@ -167,52 +167,51 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
 #            os.path.splitext(os.path.basename(grid_filename))[0])
 
   # read the stack file
-  f=h5py.File(grid_filename,'r')
-  stack_grid=f['stack_grid']
+  f = h5py.File(grid_filename,'r')
+  stack_grid = f['stack_grid']
 
-  stack_3D=stack_grid[:,it_true].reshape(nx,ny,nz)
-
+  stack_3D = stack_grid[:,it_true].reshape(nx,ny,nz)
 
   # cut through the true location at the true time 
-  xy_cut=stack_3D[:,:,iz_true] 
-  xz_cut=stack_3D[:,iy_true,:]
-  yz_cut=stack_3D[ix_true,:,:]
+  xy_cut = stack_3D[:,:,iz_true] 
+  xz_cut = stack_3D[:,iy_true,:]
+  yz_cut = stack_3D[ix_true,:,:]
 
   # extract the max stacks
-  f_stack=h5py.File(stack_filename,'r')
+  f_stack = h5py.File(stack_filename,'r')
   # if have a smoothed version, use it for the plots
   if 'max_val_smooth' in f_stack:
-    max_val=f_stack['max_val_smooth']
+    max_val = f_stack['max_val_smooth']
   else:
-    max_val=f_stack['max_val']
-  max_x=f_stack['max_x']
-  max_y=f_stack['max_y']
-  max_z=f_stack['max_z']
+    max_val = f_stack['max_val']
+  max_x = f_stack['max_x']
+  max_y = f_stack['max_y']
+  max_z = f_stack['max_z']
  
   cmap = plt.cm.hot_r 
 
   # set up the 4 axes
-  x=np.arange(nx)*dx
-  y=np.arange(ny)*dy
-  z=(np.arange(nz)*dz+z_orig)*(-1)
+  x = np.arange(nx)*dx
+  y = np.arange(ny)*dy
+  z = (np.arange(nz)*dz+z_orig)*(-1)
   # setup of t-axis depends on type of stack_start_time
-  if type(stack_start_time)==float:
-    t=np.arange(nt)*dt+stack_start_time
+  if stack_start_time:
+    t = np.arange(nt)*dt+stack_start_time
   else:
-    t=np.arange(nt)*dt
+    t = np.arange(nt)*dt
 
   # set time origin to o_time
   #t=t-it_true*dt
 
   # do plot
   #plt.clf()
-  fig=plt.figure()
+  fig = plt.figure()
   fig.set_facecolor('white')
 
-  if p1x and p1y and p1z: 
-    x1=aa*dx;y1=bb*dy;z1=z_orig+cc*dz
-  if p2x and p2y and p2z:
-    x2=dd*dx;y2=ee*dy;z2=z_orig+ff*dz
+  if p1x!=None and p1y!=None and p1z!=None: 
+    x1=p1x*dx; y1=p1y*dy; z1=z_orig+p1z*dz
+  if p2x!=None and p2y!=None and p2z!=None:
+    x2=p2z*dx; y2=p2y*dy; z2=z_orig+p2z*dz
 
   if test_info.has_key('true_values') and test_info.has_key('o_time'): 
     fig.suptitle('%s   x = %.2fkm  y = %.2fkm  z = %.2fkm'%(test_info['o_time'].isoformat(), x_true, y_true, z_true))
@@ -222,10 +221,10 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
     p=plt.subplot(2,2,1)
     pos=list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(a)', fontsize=12)
-    if p1x and p1y:
-      plt.plot(x1,y1,'y*',markersize=10)
-    if p2x and p2y:
-      plt.plot(x2,y2,'r*',markersize=10)
+    if p1x != None:
+      plt.plot(x1,y1,'y*',markersize=10,label='true')
+      plt.plot(x2,y2,'r*',markersize=10,label='waveloc')
+      plt.legend(loc=1,numpoints=1,prop={'size':8})
     plt.imshow(xy_cut.T,origin='lower',interpolation='none',extent=[np.min(x),np.max(x),np.min(y),np.max(y)],cmap=cmap)
    # if test_info.has_key('x_err'):
    #     x_low,x_high=test_info['x_err']
@@ -242,9 +241,8 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
     p=plt.subplot(4,2,5)
     pos=list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(d)', fontsize=12)
-    if p1x and p1z:
+    if p1x != None:
       plt.plot(x1,-z1,'y*',markersize=10)
-    if p2x and p2z:
       plt.plot(x2,-z2,'r*',markersize=10)
     plt.imshow(xz_cut.T,origin='upper',interpolation='none',extent=[np.min(x),np.max(x),np.min(z),np.max(z)],cmap=cmap)
     p.tick_params(labelsize=10)
@@ -259,9 +257,8 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
     p=plt.subplot(4,2,7)
     pos=list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(f)', fontsize=12)
-    if p1y and p1z:
+    if p1x != None:
       plt.plot(y1,-z1,'y*',markersize=10)
-    if p2y and p2z:
       plt.plot(y2,-z2,'r*',markersize=10)
     plt.imshow(yz_cut.T,origin='upper',interpolation='none',extent=[np.min(y),np.max(y),np.min(z),np.max(z)],cmap=cmap)
     p.xaxis.set_ticks_position('bottom')
@@ -296,10 +293,12 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
   p.yaxis.set_ticks_position('right')
   #plt.title('Maximum of stack')
   p.set_xlim(llim,rlim)
-  p.set_ylim(0,max(max_val))
+  p.set_ylim(0,max(max_val)+1)
   #p.xaxis.set_ticks_position('bottom')
   #p.xaxis.set_ticks()
   plt.vlines(t[it_true],0,max(max_val),'r',linewidth=2)
+  if loclevel:
+    plt.plot(t,[loclevel]*len(t),'y--',lw=2.)
   if test_info.has_key('t_err'):
       t_left,t_right=test_info['t_err']
       plt.axvspan(t_left,t_right,facecolor='r', alpha=0.2)
@@ -409,7 +408,7 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=0,p1y=0,p1z=0,p2x=0,p2y=0,p
   fig.text(pos[0]+pos[2]/2.,pos[1]+pos[3]+0.01, 'Stack max', fontsize=8, horizontalalignment='center', verticalalignment='bottom')
 
   #plt.tight_layout()
-  plt.savefig(fig_filename)
+  #plt.savefig(fig_filename)
   #plt.show()
 
   f.close()

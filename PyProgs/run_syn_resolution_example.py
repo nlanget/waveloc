@@ -63,7 +63,7 @@ def doPointTest(wo, loclevel=10.0):
 
     # do the migration
     test_info = generateSyntheticDirac(wo.opdict)
-    logging.info(test_info)
+    #logging.info(test_info)
 
     # retrieve output info
     stack_filename = test_info['stack_file']
@@ -81,9 +81,9 @@ def doPointTest(wo, loclevel=10.0):
     max_z = f_stack['max_z']
 
     # smooth the max_val
-    max_val_smoothed = smooth(max_val[:])
+    max_val_smoothed = smooth(max_val[:],51)
 
-    # launch a location trivver
+    # launch a location trigger
     locs = trigger_locations_inner(max_val_smoothed, max_x, max_y, max_z,
                                    loclevel, loclevel, stack_start_time, dt)
 
@@ -111,7 +111,6 @@ def analyseLocs(locs, wo, test_info):
       iy_found = int(round((aloc['y_mean']-y_orig)*1./dy))
       iz_found = int(round((aloc['z_mean']-z_orig)*1./dz))
       print ix_found,iy_found,iz_found
-    print "end locations"
 
     # This is a dirac test, but we may have more than one loc
     # (secondary maxima) so for safety, pull out best loc
@@ -125,11 +124,22 @@ def analyseLocs(locs, wo, test_info):
         loc_dist = None
         loc_dt = None
 
+    if n_locs > 0:
+      iloc = 1
+      for loc in locs:
+        print test_info['true_indexes']
+        test_info['true_indexes'] = (ix_true, iy_true, iz_true, it_true)
+        plotSyntheticResult(wo,test_info,loc,iloc)
+        iloc = iloc + 1
+      plt.show()
+
     return n_locs, loc_dist, loc_dt, trig_loc
 
 
 def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
                      decimation=(1, 1, 1)):
+
+    wo.opdict['loclevel'] = loclevel
 
     dec_x, dec_y, dec_z = decimation
 
@@ -178,12 +188,13 @@ def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
         wo.opdict['syn_iz'] = [iz]
 
         # do synthetic test for this point
-        test_info, locs = doPointTest(wo, loclevel=10.0)
+        test_info, locs = doPointTest(wo, loclevel)
 
         # do analysis for this point
         n_locs, best_dist, best_dt, trig_loc = analyseLocs(locs, wo, test_info)
-        print ix, iy, iz, n_locs, best_dist, best_dt
-        raw_input("Pause")
+        print "Point : (%d, %d, %d)\n# locs : %d"%(ix, iy, iz, n_locs)
+        print "best_dist : ", best_dist, "km"
+        print "best_dt : ", best_dt, "s"
 
         # save into array
         dist_grid[ib_dec] = best_dist
@@ -204,6 +215,161 @@ def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
     f.close()
 
     return resgrid_filename
+
+
+def plotSyntheticResult(wo,test_info,loc,iloc):
+
+    # The first figure shows the stacking values for the true origin time.
+    # The second figure shows the stacking values for the recovered origin time.
+    # The third plot shows the kurtosis traces alignment.
+    # yellow star = true location (ixx, iyy, izz) ; 
+    # red star = Waveloc's location (ix_found, iy_found, iz_found)
+
+    import matplotlib.pyplot as plt
+
+    nx, ny, nz, nt = test_info['grid_shape']
+    dx, dy, dz, dt = test_info['grid_spacing']
+    x_orig, y_orig, z_orig = test_info['grid_orig']
+    ix_true, iy_true, iz_true, it_true = test_info['true_indexes']
+
+    stack_filename = test_info['stack_file']
+    f_stack = h5py.File(stack_filename,'r')
+    if 'max_val_smooth' in f_stack:
+      max_val = f_stack['max_val_smooth']
+    else:
+      max_val = f_stack['max_val']
+    np_max_val = max_val[:]
+    f_stack.close()
+
+    ixx = wo.opdict['syn_ix'][0]
+    iyy = wo.opdict['syn_iy'][0]
+    izz = wo.opdict['syn_iz'][0]
+
+    stack_start_time = test_info['start_time']
+    i_start = int(stack_start_time * wo.opdict['syn_samplefreq'])
+
+    loclevel = wo.opdict['loclevel']
+
+    # Waveloc location
+    print loc['o_time']
+    it_found = int(wo.opdict['syn_samplefreq'] * loc['o_time'])-i_start
+    ix_found = int(round((loc['x_mean']-x_orig)*1./dx))
+    iy_found = int(round((loc['y_mean']-y_orig)*1./dy))
+    iz_found = int(round((loc['z_mean']-z_orig)*1./dz))
+
+    from plot_mpl import plotDiracTest
+    print "True location", test_info['true_indexes']
+    fig_name = os.path.join(wo.opdict['base_path'], 'out',wo.opdict['outdir'],'fig')
+    plotDiracTest(test_info,fig_name,2,p1x=ixx,p1y=iyy,p1z=izz,p2x=ix_found,p2y=iy_found,p2z=iz_found,loclevel=loclevel)
+    plt.savefig('../out/%s/fig/loc%d_x%d_y%d_z%d_true.pdf'%(wo.opdict['outdir'],iloc,ixx,iyy,izz))
+
+    test_info['true_indexes'] = (ix_found, iy_found, iz_found, it_found)
+    print "Waveloc location",test_info['true_indexes']
+    fig_name = os.path.join(wo.opdict['base_path'], 'out',wo.opdict['outdir'],'fig')
+    plotDiracTest(test_info,fig_name,2,p1x=ixx,p1y=iyy,p1z=izz,p2x=ix_found,p2y=iy_found,p2z=iz_found,loclevel=loclevel)
+    plt.savefig('../out/%s/fig/loc%d_x%d_y%d_z%d_wl.pdf'%(wo.opdict['outdir'],iloc,ixx,iyy,izz))
+
+    # True location
+    wib = ix_true*ny*nz + iy_true*nz + iz_true
+    from hdf5_grids import get_interpolated_time_grids
+    time_grids = get_interpolated_time_grids(wo.opdict)
+    ttimes_true = {}
+    for sta in sorted(test_info['data']):
+      if time_grids.has_key(sta):
+        ttimes_true[sta] = time_grids[sta].grid_data[wib]
+      else:
+        logging.info('Missing travel-time information for station %s. Ignoring station...'%sta)
+
+    # Waveloc location
+    wib = ix_found*ny*nz + iy_found*nz + iz_found
+    ttimes_wl = {}
+    for sta in sorted(test_info['data']):
+      if time_grids.has_key(sta):
+        ttimes_wl[sta] = time_grids[sta].grid_data[wib]
+      else:
+        logging.info('Missing travel-time information for station %s. Ignoring station...'%sta)
+
+    fig = plt.figure(figsize=(12,8))
+    fig.set_facecolor('white')
+    n_traces = len(ttimes_true) + 3
+    list_ind = []
+    sum_true, sum_wl = [],[]
+    for iii,key in enumerate(sorted(ttimes_true)):
+      delta_t = test_info['grid_spacing'][-1]
+      t = np.arange(0,len(test_info['data'][key])*delta_t,delta_t)
+      ax = fig.add_subplot(n_traces,3,3*iii+1)
+      ax.set_axis_off()
+      ax.plot(t,test_info['data'][key],'k')
+      ax.text(0.2,0.5,key)
+
+      ### true location ###
+      ind = np.argmin(np.abs(t-ttimes_true[key]))
+      lmv = len(np_max_val)
+      t = np.arange(0,len(test_info['data'][key][ind:ind+lmv])*delta_t,delta_t)+stack_start_time
+      ax = fig.add_subplot(n_traces,3,3*iii+2)
+      ax.set_axis_off()
+      if len(t) == len(test_info['data'][key][ind:ind+lmv]):
+        ax.plot(t,test_info['data'][key][ind:ind+lmv],'k')
+      else:
+        ax.plot(t[:-1],test_info['data'][key][ind:ind+lmv],'k')
+      ax.set_xlim([0,t[-1]])
+      sum_true.append(test_info['data'][key][ind:ind+lmv])
+      
+      ### waveloc location ###
+      ind = np.argmin(np.abs(t-ttimes_wl[key]))
+      t = np.arange(0,len(test_info['data'][key][ind:ind+lmv])*delta_t,delta_t)+stack_start_time
+      ax = fig.add_subplot(n_traces,3,3*iii+3)
+      ax.set_axis_off()
+      if len(t) == len(test_info['data'][key][ind:ind+lmv]):
+        ax.plot(t,test_info['data'][key][ind:ind+lmv],'k')
+      else:
+        ax.plot(t[:-1],test_info['data'][key][ind:ind+lmv],'k')
+      ax.set_xlim([0,t[-1]])
+      sum_wl.append(test_info['data'][key][ind:ind+lmv])
+
+
+    t = np.arange(nt)*dt+stack_start_time
+    ### stack at true location ###
+    stack_true = np.sum(sum_true,axis=0)
+    ax = fig.add_subplot(n_traces,3,3*(iii+1)+2)
+    ax.plot(t,stack_true,'k')
+    ax.plot(t,[loclevel]*lmv,'y--',lw=2.)
+    ax.plot([t[it_true+i_start],t[it_true+i_start]],[np.min(stack_true),np.max(stack_true)],'r-',lw=2.)
+    ax.set_axis_off()
+    ax.set_xlim([0,t[-1]])
+
+    ### stack at waveloc location ###
+    stack_wl = np.sum(sum_wl,axis=0)
+    ax = fig.add_subplot(n_traces,3,3*(iii+1)+3)
+    ax.plot(t,stack_wl,'k')
+    ax.plot(t,[loclevel]*lmv,'y--',lw=2.)
+    ax.plot([t[it_found+i_start],t[it_found+i_start]],[np.min(stack_true),np.max(stack_true)],'r-',lw=2.)
+    ax.set_axis_off()
+    ax.set_xlim([0,t[-1]])
+
+    ### global stack ###
+    ax = fig.add_subplot(n_traces,3,3*(iii+1)+5,frameon=False)
+    #ax.set_axis_off()
+    ax.plot(t,np_max_val,'k')
+    ax.plot(t,[loclevel]*lmv,'y--',lw=2.)
+    ax.plot([t[it_true],t[it_true]],[np.min(np_max_val),np.max(np_max_val)],'r-',lw=2.)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.get_yaxis().set_visible(False)
+    ax.set_xlim([0,t[-1]])
+    ax.set_xlabel('Origin time (s)')
+
+    ax = fig.add_subplot(n_traces,3,3*(iii+1)+6,frameon=False)
+    ax.plot(t,np_max_val,'k')
+    ax.plot(t,[loclevel]*lmv,'y--',lw=2.)
+    ax.plot([t[it_found],t[it_found]],[np.min(np_max_val),np.max(np_max_val)],'r-',lw=2.)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.get_yaxis().set_visible(False)
+    ax.set_xlim([0,t[-1]])
+    ax.set_xlabel('Origin time (s)')
+
+    plt.figtext(0.45,0.93,'True location')
+    plt.figtext(0.72,0.93,'Waveloc location')
+    plt.savefig('../out/%s/fig/mig_loc%d_x%d_y%d_z%d.pdf'%(wo.opdict['outdir'],iloc,ixx,iyy,izz))
 
 
 def plotResolutionTest(wo, hdf_filename, plot_filename):
@@ -263,8 +429,8 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
     vmax_dist = np.max(dist_grid)
     vmin_nloc = np.min(nloc_grid)
     vmax_nloc = np.max(nloc_grid)
-    vmin_dt = np.min(dt_grid)
-    vmax_dt = np.max(dt_grid)
+    #vmin_dt = np.min(dt_grid)
+    #vmax_dt = np.max(dt_grid)
     vmin_dt = np.mean(np.abs(dt_grid)) - np.std(dt_grid)
     vmax_dt = np.mean(np.abs(dt_grid)) + np.std(dt_grid)
 
@@ -289,14 +455,14 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         xy_extent = [np.min(x), np.max(x), np.min(y), np.max(y)]
 
         p = plt.subplot(1, 3, 1)
-        plt.imshow(xy_cut_dist.T, vmin=vmin_dist, vmax=vmax_dist,
+        plt.imshow(xy_cut_dist.T, vmin=0, vmax=1.5,
                    origin='lower', interpolation='none',
                    extent=xy_extent, cmap=col)
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
         plt.ylabel('y (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=range(0,np.ceil(vmax_dist),1))
+        plt.colorbar(orientation='horizontal', ticks=np.arange(0,1.5+dx,dx))
         plt.scatter(sta_x, sta_y)
         plt.title('Distance (km)')
         plt.figtext(.08,.87,'(a)')
@@ -308,7 +474,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=range(1,vmax_nloc+1))
+        plt.colorbar(orientation='horizontal', ticks=range(1,vmax_nloc+1,2))
         plt.scatter(sta_x, sta_y)
         plt.title('No of locs')
         plt.figtext(.37,.87,'(b)')
@@ -332,10 +498,9 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
 
 if __name__ == '__main__':
 
-    hdf_filename = 'Ijen_waveloc_resolution.hdf5'
-    plot_filename = 'Ijen_waveloc_resolution.png'
+    hdf_filename = '2309_Ijen_waveloc_resolution.hdf5'
+    plot_filename = '2309_Ijen_waveloc_resolution.png'
 
     wo, grid_info = setUp()
-    #doResolutionTest(wo, grid_info, hdf_filename,
-                     #loclevel=3.0, decimation=(1, 1, 1))
+    doResolutionTest(wo, grid_info, hdf_filename, loclevel=20.0, decimation=(5, 5, 5))
     plotResolutionTest(wo, hdf_filename, plot_filename)
