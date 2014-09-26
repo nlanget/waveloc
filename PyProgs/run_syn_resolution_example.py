@@ -26,6 +26,7 @@ def setUp():
     # set options for synthetic test
     wo.opdict['time'] = True
     wo.opdict['verbose'] = False
+    wo.opdict['plot'] = True
 
     wo.opdict['outdir'] = 'EXAMPLE_Dirac'
     wo.opdict['time_grid'] = 'ijen.P'
@@ -117,21 +118,21 @@ def analyseLocs(locs, wo, test_info):
     if n_locs > 0:
         imax = np.argmax([loc['max_trig'] for loc in locs])
         trig_loc = locs[imax]
-        loc_dt = loc_dt_list[imax]
+        loc_dt = loc_dt_list[imax][0]
         loc_dist = loc_dist_list[imax]
     else:
         trig_loc = None
         loc_dist = None
         loc_dt = None
 
-    if n_locs > 0:
-      iloc = 1
-      for loc in locs:
-        print test_info['true_indexes']
-        test_info['true_indexes'] = (ix_true, iy_true, iz_true, it_true)
-        plotSyntheticResult(wo,test_info,loc,iloc)
-        iloc = iloc + 1
-      plt.show()
+    if wo.opdict['plot']:
+      if n_locs > 0:
+        iloc = 1
+        for loc in locs:
+          test_info['true_indexes'] = (ix_true, iy_true, iz_true, it_true)
+          plotSyntheticResult(wo,test_info,loc,iloc)
+          iloc = iloc + 1
+        plt.show()
 
     return n_locs, loc_dist, loc_dt, trig_loc
 
@@ -186,6 +187,9 @@ def doResolutionTest(wo, grid_info, filename, loclevel=10.0,
         wo.opdict['syn_ix'] = [ix]
         wo.opdict['syn_iy'] = [iy]
         wo.opdict['syn_iz'] = [iz]
+
+        if ix!=27 or iy!=26:
+          continue
 
         # do synthetic test for this point
         test_info, locs = doPointTest(wo, loclevel)
@@ -251,7 +255,6 @@ def plotSyntheticResult(wo,test_info,loc,iloc):
     loclevel = wo.opdict['loclevel']
 
     # Waveloc location
-    print loc['o_time']
     it_found = int(wo.opdict['syn_samplefreq'] * loc['o_time'])-i_start
     ix_found = int(round((loc['x_mean']-x_orig)*1./dx))
     iy_found = int(round((loc['y_mean']-y_orig)*1./dy))
@@ -431,8 +434,11 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
     vmax_nloc = np.max(nloc_grid)
     #vmin_dt = np.min(dt_grid)
     #vmax_dt = np.max(dt_grid)
-    vmin_dt = np.mean(np.abs(dt_grid)) - np.std(dt_grid)
-    vmax_dt = np.mean(np.abs(dt_grid)) + np.std(dt_grid)
+    dt_grid[27][26][1] = -999.
+    #vmin_dt = np.min(dt_grid[dt_grid!=-999.])
+    #vmax_dt = np.max(dt_grid[dt_grid!=-999.])
+    vmin_dt = np.mean(np.abs(dt_grid[dt_grid!=-999.])) - np.std(dt_grid[dt_grid!=-999.])
+    vmax_dt = np.mean(np.abs(dt_grid[dt_grid!=-999.])) + np.std(dt_grid[dt_grid!=-999.])
 
     # filename
     (root, ext) = os.path.splitext(plot_filename)
@@ -455,15 +461,15 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         xy_extent = [np.min(x), np.max(x), np.min(y), np.max(y)]
 
         p = plt.subplot(1, 3, 1)
-        plt.imshow(xy_cut_dist.T, vmin=0, vmax=1.5,
+        plt.imshow(xy_cut_dist.T, vmin=0, vmax=2.5,
                    origin='lower', interpolation='none',
                    extent=xy_extent, cmap=col)
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
         plt.ylabel('y (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=np.arange(0,1.5+dx,dx))
-        plt.scatter(sta_x, sta_y)
+        plt.colorbar(orientation='horizontal', ticks=np.arange(0,2.5+dx,dx))
+        plt.scatter(sta_x, sta_y, c='r')
         plt.title('Distance (km)')
         plt.figtext(.08,.87,'(a)')
 
@@ -475,7 +481,7 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
         plt.colorbar(orientation='horizontal', ticks=range(1,vmax_nloc+1,2))
-        plt.scatter(sta_x, sta_y)
+        plt.scatter(sta_x, sta_y, c='r')
         plt.title('No of locs')
         plt.figtext(.37,.87,'(b)')
 
@@ -486,8 +492,8 @@ def plotResolutionTest(wo, hdf_filename, plot_filename):
         p.tick_params(labelsize=10)
         p.xaxis.set_ticks_position('bottom')
         plt.xlabel('x (km wrt ref)', size=10)
-        plt.colorbar(orientation='horizontal', ticks=[-0.03,0,0.03,0.06])
-        plt.scatter(sta_x, sta_y)
+        plt.colorbar(orientation='horizontal', ticks=[-0.25,0,0.25,0.5])
+        plt.scatter(sta_x, sta_y, c='r')
         plt.title('Dt origin time (s)')
         plt.figtext(.65,.87,'(c)')
 
@@ -502,5 +508,5 @@ if __name__ == '__main__':
     plot_filename = '2309_Ijen_waveloc_resolution.png'
 
     wo, grid_info = setUp()
-    doResolutionTest(wo, grid_info, hdf_filename, loclevel=20.0, decimation=(5, 5, 5))
+    #doResolutionTest(wo, grid_info, hdf_filename, loclevel=20.0)#, decimation=(5,5,5))
     plotResolutionTest(wo, hdf_filename, plot_filename)

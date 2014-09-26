@@ -211,25 +211,21 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=None,p1y=None,p1z=None,p2x=
   if p1x!=None and p1y!=None and p1z!=None: 
     x1=p1x*dx; y1=p1y*dy; z1=z_orig+p1z*dz
   if p2x!=None and p2y!=None and p2z!=None:
-    x2=p2z*dx; y2=p2y*dy; z2=z_orig+p2z*dz
+    x2=p2x*dx; y2=p2y*dy; z2=z_orig+p2z*dz
 
   if test_info.has_key('true_values') and test_info.has_key('o_time'): 
     fig.suptitle('%s   x = %.2fkm  y = %.2fkm  z = %.2fkm'%(test_info['o_time'].isoformat(), x_true, y_true, z_true))
 
   # plot xy plane
   if dx > 0 and dy > 0:
-    p=plt.subplot(2,2,1)
-    pos=list(p.get_position().bounds)
+    p = plt.subplot(2,2,1)
+    pos = list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(a)', fontsize=12)
     if p1x != None:
       plt.plot(x1,y1,'y*',markersize=10,label='true')
       plt.plot(x2,y2,'r*',markersize=10,label='waveloc')
       plt.legend(loc=1,numpoints=1,prop={'size':8})
     plt.imshow(xy_cut.T,origin='lower',interpolation='none',extent=[np.min(x),np.max(x),np.min(y),np.max(y)],cmap=cmap)
-   # if test_info.has_key('x_err'):
-   #     x_low,x_high=test_info['x_err']
-   #     plt.vlines(x_low,np.min(y),np.max(y),'w',linewidth=1)
-   #     plt.vlines(x_high,np.min(y),np.max(y),'w',linewidth=1)
     p.tick_params(labelsize=10)
     p.xaxis.set_ticks_position('bottom')
     plt.xlabel('x (km wrt ref)',size=10)
@@ -238,17 +234,17 @@ def plotDiracTest(test_info,fig_dir,otime_window,p1x=None,p1y=None,p1z=None,p2x=
     
   #plot xz plane
   if dx > 0 and dz > 0 :
-    p=plt.subplot(4,2,5)
-    pos=list(p.get_position().bounds)
+    p = plt.subplot(4,2,5)
+    pos = list(p.get_position().bounds)
     fig.text(pos[0]-0.08,pos[1]+pos[3], '(d)', fontsize=12)
     if p1x != None:
       plt.plot(x1,-z1,'y*',markersize=10)
       plt.plot(x2,-z2,'r*',markersize=10)
     plt.imshow(xz_cut.T,origin='upper',interpolation='none',extent=[np.min(x),np.max(x),np.min(z),np.max(z)],cmap=cmap)
     p.tick_params(labelsize=10)
-    p.xaxis.set_ticks_position('top')
-    p.xaxis.set_ticklabels('')
-    #plt.xlabel('x (km wrt ref)')
+    p.xaxis.set_ticks_position('bottom')
+    #p.xaxis.set_ticklabels('')
+    plt.xlabel('x (km wrt ref)',size=10)
     plt.ylabel('z (km up)',size=10)
     #plt.title('XZ plane')
 
