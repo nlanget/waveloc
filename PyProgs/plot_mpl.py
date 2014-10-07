@@ -143,7 +143,7 @@ def plotLocationGrid(loc,grid_info,fig_dir,otime_window):
   plotDiracTest(plot_info,fig_dir,otime_window)
 
 
-def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None,ee=None,ff=None):
+def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None,ee=None,ff=None,loclevel=None):
 
   # set up plot using info from test_info
   nx,ny,nz,nt = test_info['grid_shape']
@@ -295,9 +295,11 @@ def plotDiracTest(test_info,fig_dir,otime_window,aa=None,bb=None,cc=None,dd=None
   #p.xaxis.set_ticks_position('bottom')
   #p.xaxis.set_ticks()
   plt.vlines(t[it_true],0,max(max_val),'r',linewidth=2)
+  if loclevel:
+    plt.plot(t,[loclevel]*len(t),'y--',lw=2.)
   if test_info.has_key('t_err'):
-      t_left,t_right = test_info['t_err']
-      plt.axvspan(t_left,t_right,facecolor='r', alpha=0.2)
+    t_left,t_right = test_info['t_err']
+    plt.axvspan(t_left,t_right,facecolor='r', alpha=0.2)
 
   # put the origin back in for the last plots
   x = np.arange(nx)*dx+x_orig
